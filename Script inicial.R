@@ -5,3 +5,4 @@ summary(prueba_get_microdata2)
 min(prueba_get_microdata2$ANO4)
 max(prueba_get_microdata2$ANO4)
 library(openxlsx)
+  
