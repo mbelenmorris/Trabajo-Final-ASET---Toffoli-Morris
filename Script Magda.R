@@ -70,6 +70,14 @@ base_eph1923_acotada <- base_eph1923_acotada %>%
       TRUE ~ "Otros"
     )
   )
-
+base3T_19_23%>% 
+  filter(P21 >0) %>% group_by(ANO4) %>% 
+  summarise(Min = min(P21, na.rm = TRUE),
+            
+            Q1 = quantile(P21, 0.25, na.rm = TRUE),
+            Mediana = median(P21, na.rm = TRUE),
+            Q3 = quantile(P21, 0.75, na.rm = TRUE),
+            Max = max(P21, na.rm = TRUE)
+  )
 
 
