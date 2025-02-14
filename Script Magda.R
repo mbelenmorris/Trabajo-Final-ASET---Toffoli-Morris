@@ -6,7 +6,7 @@ base_eph1923_acotada=base3T_19_23 %>% select(CODUSU, ANO4,TRIMESTRE, REGION,AGLO
 saveRDS(base_eph1923_acotada, file = "base_eph1923_acotada.rds")
 
 #recodificar valores: SEXO, PP04B_COD (CAES), PP04C(CANTIDAD EMPLEADOS)
-#base_eph1923_acotada %>% eph::organize_labels (base_eph1923_acotada) ----si interesa agregar etiquetas
+base_eph1923_acotada %>% eph::organize_labels (base_eph1923_acotada)
 base_eph1923_acotada=base_eph1923_acotada %>% mutate(CH04=case_when(
   CH04==1 ~ "Varón",
   CH04==2 ~ "Mujer",
@@ -79,5 +79,136 @@ base3T_19_23%>%
             Q3 = quantile(P21, 0.75, na.rm = TRUE),
             Max = max(P21, na.rm = TRUE)
   )
+base_eph1923_acotada <- base_eph1923_acotada %>% eph::organize_labels()
+#códigos para el análisis exploratorio
+#SEXO Y AÑO
+poblacion_x_año<- base_eph1923_acotada %>% group_by (ANO4) %>% summarize(sum(PONDERA))
+sexo_año<- base_eph1923_acotada %>% group_by (SEXO,ANO4) %>% summarize(sum(PONDERA))
+#calculo distribución y porcentajes por sexo, estado, categoría ocupacional, categoría inactividad
+#sexo
+sexo_año_pond <- base_eph1923_acotada %>% 
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+#cant.empleados --tamaño del establecimiento
+cant_empleados_pond <- base_eph1923_acotada %>% 
+  group_by(ANO4, CANT.EMPLEADOS) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+#sector de actividad
+sector.de.actividad_pond <- base_eph1923_acotada %>% 
+  group_by(ANO4, SECTOR.DE.ACTIVIDAD) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+#condición de actividad
+cond_actividad_pond <- base_eph1923_acotada %>% 
+  group_by(ANO4, ESTADO) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+#categoría ocupacional:notar que hay un valor 0 que no figura en el diseño. segun el anexo: El código 0 identifica los casos a los cuales no les corresponde la secuencia analizada. ACÁ SERÍAN LOS INACTIVOS Y MENORES DE 10
+categ_ocupacional_pond <- base_eph1923_acotada %>% 
+  group_by(ANO4, CAT_OCUP) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
+#SOLO CALCULO POR CONSOLA PARA CHEQUEAR QUÉ CONDICIÓN DE ACTIVIDAD ASUME VALOR 0 EN CAT_OCUP
+calculate_tabulates(
+  base_eph1923_acotada,
+  x = "ESTADO",
+  y = "CAT_OCUP",
+  weight = "PONDERA",
+  add.totals = "row", add.percentage = "col")
 
+#categoría de inactividad
+
+cat_inactividad_pond <- base_eph1923_acotada %>% 
+  group_by(ANO4, CAT_INAC) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+#Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene 
+tasas_1923 <- base3T_19_23 %>%  
+  group_by(ANO4) %>% 
+  summarise(
+    Poblacion          = sum(PONDERA),
+    
+    Ocupados          = sum(PONDERA[ESTADO == 1]),
+    Ocupados_pct      = (Ocupados / Poblacion) * 100,
+    
+    Desocupados       = sum(PONDERA[ESTADO == 2]),
+    Desocupados_pct   = (Desocupados / Poblacion) * 100,
+    
+    PNEA= sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PNEA_pct   = (PNEA / Poblacion) * 100,
+    
+    PEA               = Ocupados + Desocupados,
+    PEA_pct           = (PEA / Poblacion) * 100,
+    
+    Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
+    Ocupados_demand_pct = (Ocupados_demand / PEA) * 100,
+    
+    Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
+    Suboc_demandante_pct = (Suboc_demandante / PEA) * 100,
+    
+    Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
+    Suboc_no_demand_pct = (Suboc_no_demand / PEA) * 100,
+    
+    Subocupados       = Suboc_demandante + Suboc_no_demand,
+    Subocupados_pct   = (Subocupados / PEA) * 100,
+    
+    'Tasa Actividad'                  = (PEA / Poblacion) * 100,
+    'Tasa Inactividad'                  = (PNEA / Poblacion) * 100,
+    'Tasa Empleo'                     = (Ocupados / Poblacion) * 100,
+    'Tasa Desocupacion'               = (Desocupados / PEA) * 100,
+    'Tasa ocupados demandantes'       = (Ocupados_demand / PEA) * 100,
+    'Tasa Subocupación'               = (Subocupados / PEA) * 100,
+    'Tasa Subocupación demandante'    = (Suboc_demandante / PEA) * 100,
+    'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
+  ) %>%
+  # Redondear los porcentajes a 1 decimal
+  mutate(across(ends_with("_pct"), ~ round(., 1)),
+         across(starts_with("Tasa"), ~ round(., 1)))
+
+##tasas básicas por sexo
+tasas_sexo_1923 <- base3T_19_23 %>%  
+  group_by(ANO4, CH04) %>% 
+  summarise(
+    Poblacion          = sum(PONDERA),
+    
+    Ocupados          = sum(PONDERA[ESTADO == 1]),
+    Ocupados_pct      = (Ocupados / Poblacion) * 100,
+    
+    Desocupados       = sum(PONDERA[ESTADO == 2]),
+    Desocupados_pct   = (Desocupados / Poblacion) * 100,
+    
+    PNEA= sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PNEA_pct   = (PNEA / Poblacion) * 100,
+    
+    PEA               = Ocupados + Desocupados,
+    PEA_pct           = (PEA / Poblacion) * 100,
+    
+    Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
+    Ocupados_demand_pct = (Ocupados_demand / PEA) * 100,
+    
+    Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
+    Suboc_demandante_pct = (Suboc_demandante / PEA) * 100,
+    
+    Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
+    Suboc_no_demand_pct = (Suboc_no_demand / PEA) * 100,
+    
+    Subocupados       = Suboc_demandante + Suboc_no_demand,
+    Subocupados_pct   = (Subocupados / PEA) * 100,
+    
+    'Tasa Actividad'                  = (PEA / Poblacion) * 100,
+    'Tasa Inactividad'                  = (PNEA / Poblacion) * 100,
+    'Tasa Empleo'                     = (Ocupados / Poblacion) * 100,
+    'Tasa Desocupacion'               = (Desocupados / PEA) * 100,
+    'Tasa ocupados demandantes'       = (Ocupados_demand / PEA) * 100,
+    'Tasa Subocupación'               = (Subocupados / PEA) * 100,
+    'Tasa Subocupación demandante'    = (Suboc_demandante / PEA) * 100,
+    'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
+  ) %>%
+  # Redondear los porcentajes a 1 decimal
+  mutate(across(ends_with("_pct"), ~ round(., 1)),
+         across(starts_with("Tasa"), ~ round(., 1)))
+
+tasas_sexo_final<- base3T_19_23
