@@ -69,6 +69,7 @@ base_eph1923_acotada <- base_eph1923_acotada %>%
   )
 
 base_eph1923_acotada <- base_eph1923_acotada %>% eph::organize_labels()
+
 #códigos para el análisis exploratorio
 
 poblacion_x_año<- base_eph1923_acotada %>% group_by (ANO4) %>% summarize(Poblacion=sum(PONDERA))
@@ -218,8 +219,17 @@ tasas_sexo_1923<- base3T_19_23 %>%
     'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
   )  %>% # Redondear las columnas de tasas a 1 decimal
   mutate(across(starts_with("Tasa"), ~ round(., 1))) %>% select(ANO4, CH04, starts_with("Tasa"))
+#imprimir tabla
+html_file2 <- tempfile(fileext = ".html")
 
+# Crear y guardar la tabla en HTML
+tasas_sexo_1923 %>%
+  kable(format = "html", digits = 1) %>%
+  kable_styling(full_width = FALSE, bootstrap_options = c("striped", "hover")) %>%
+  save_kable(html_file2)
 
+# Convertir el HTML a PNG
+webshot(html_file2, file = "tasas_sexo_1923.png", selector = "table")
 
 #VARIABLES DUMMY
 
