@@ -46,10 +46,32 @@ summary(base_eph1923_acotada$CANT.EMPLEADOS) #no me aparecían registros para m�
 
 #PP04B_COD (CAES)
 
+base_eph1923_acotada <- base_eph1923_acotada %>%
+  mutate(
+    SECTOR.DE.ACTIVIDAD = case_when(
+      grepl("^0[1-9]", SECTOR.DE.ACTIVIDAD) ~ "Agricultura y minería", 
+      grepl("^1[0-9]|^2[0-9]|^3[0-3]", SECTOR.DE.ACTIVIDAD) ~ "Industria manufacturera",
+      grepl("^3[5-9]", SECTOR.DE.ACTIVIDAD) ~ "Suministro de gas, agua, electricidad y otros", 
+      grepl("^40", SECTOR.DE.ACTIVIDAD) ~ "Construcción",
+      grepl("^4[5-8]|^5[5-6]", SECTOR.DE.ACTIVIDAD) ~ "Comercio, hotelería y gastronomía",
+      grepl("^4[9-9]|^5[0-3]", SECTOR.DE.ACTIVIDAD) ~ "Transporte",
+      grepl("^5[8-9]|^6[0-3]", SECTOR.DE.ACTIVIDAD) ~ "Información y Comunicación",
+      grepl("^6[4-8]", SECTOR.DE.ACTIVIDAD) ~ "Actividades financieras, seguros, inmobiliarias",
+      grepl("^6[9-9]|^7[0-5]", SECTOR.DE.ACTIVIDAD) ~ "Actividades Profesionales, Científicas y Técnicas",
+      grepl("^7[7-9]|^8[0-2]", SECTOR.DE.ACTIVIDAD) ~ "Actividades Administrativas y Servicios de Apoyo",
+      grepl("^8[3-4]", SECTOR.DE.ACTIVIDAD) ~ "Administración Pública y Defensa",
+      grepl("^8[5]", SECTOR.DE.ACTIVIDAD) ~ "Enseñanza",
+      grepl("^8[6-8]",SECTOR.DE.ACTIVIDAD) ~ "Salud Humana y Servicios Sociales",
+      grepl("^9[0-3]", SECTOR.DE.ACTIVIDAD) ~ "Artes, Entretenimiento y Recreación",
+      grepl("^9[4-6]", SECTOR.DE.ACTIVIDAD) ~ "Otras Actividades de Servicios",
+      TRUE ~ "Otros"
+    )
+  )
+organize_caes(base3T_19_23)
 
-base3T_19_23<- base_eph1923_acotada %>% 
-  filter(!is.na(CAES)) %>%  group_by(ANO4, SECTOR.DE.ACTIVIDAD) %>% 
-  summarize(casos = sum(PONDERA)) %>%  group_by(ANO4) %>%
+caes_año <- base3T_19_23%>% 
+  group_by(ANO4, PP04B_COD) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
 base_eph1923_acotada <- base_eph1923_acotada %>% eph::organize_labels()
@@ -243,10 +265,12 @@ summary(base_eph1923_acotada$preca.forma.contrat)
 #Preca.cuentaprop
 base_eph1923_acotada <- base_eph1923_acotada %>% 
   mutate(
-    preca.cuentaprop = ifelse(CAT_OCUP == 2 & PP05H %in% c(1,2,3,4), 10, 0)  # Se aplica solo a CAT_OCUP == 2
+    preca.cuentaprop = ifelse(CAT_OCUP == 2 & PP05H %in% c(1,2,3,4), 10, 0)  # Se aplica solo a CAT_OCUP == 2; revisar categoría 9 q es no sabe no contesta y catalogarla como NA
   )
 
 
 calculate_tabulates (base_eph1923_acotada, "ANO4", "preca.forma.contrat", add.percentage = "col", "PONDERA")    
 summary(base_eph1923_acotada$preca.forma.contrat)
 
+
+    
