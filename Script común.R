@@ -6,11 +6,12 @@ library(srvyr)
 library(haven)
 
 Variables=c("CODUSU","ANO4", "TRIMESTRE", "REGION", "AGLOMERADO", "PONDERA", "CH04","CH06","ESTADO", "CAT_OCUP", "CAT_INAC",
-            "PP04A", "PP04B_COD", "CH15", "NIVEL_ED", "PP04C", "PP03C", "PP03G", "PP03I", "PP03J", "P21", "INTENSI",  "PP07C", "PP07E", "PP07G1", "PP07G2", "PP07G3", "PP07G4", "PP07H", "PP07I", "DECOCUR", "PONDIIO")
+            "PP04A", "PP04B_COD", "CH15", "NIVEL_ED", "PP04C", "PP03C", "PP03G", "PP03I", "PP03J", "P21", "INTENSI",  "PP07C", "PP07E", "PP07G1", "PP07G2", "PP07G3", "PP07G4", "PP07H", "PP07I", "DECOCUR", "PONDIIO", "PP05H")
 EPH2019_2023CAES=get_microdata(year=2019:2023, period = 1,type = "individual", vars = Variables)
 
 saveRDS(EPH2019_2023CAES, file = "EPH2019_2023CAES.rds")
 EPH2019_2023CAES <- EPH2019_2023CAES %>% eph::organize_labels()
+EPH2019_2023CAES=organize_caes(EPH2019_2023CAES)
 
 
 #Variables nuevas y recodificadas (SEXO, PP04B_COD (CAES), PP04C(CANTIDAD EMPLEADOS), Grupos etarios, ámbito del establecimiento, región, lugar de nacimiento, nivel_educativo_completo)
@@ -132,7 +133,7 @@ cant_empleados_pond <- EPH2019_2023CAES %>%
 
 #sector de actividad
 sector.de.actividad_pond <- EPH2019_2023CAES %>% 
-  group_by(ANO4, SECTOR.DE.ACTIVIDAD) %>% 
+    group_by(ANO4, caes_eph_label ) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
@@ -147,6 +148,7 @@ categ_ocupacional_pond <- EPH2019_2023CAES %>%
   group_by(ANO4, CAT_OCUP) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 #categoría de inactividad
 unique(EPH2019_2023CAES$CAT_INAC)
 cat_inactividad_pond <- EPH2019_2023CAES %>%  filter(!is.na(CAT_INAC)& CAT_INAC!=0 ) %>% 
@@ -156,7 +158,7 @@ cat_inactividad_pond <- EPH2019_2023CAES %>%  filter(!is.na(CAT_INAC)& CAT_INAC!
 
 #Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene. Por eso uso el df con todas las variables.  
 
-Datos_MT_1923<- base3T_19_23 %>%  
+Datos_MT_1923<- EPH2019_2023CAES %>%  
   group_by(ANO4) %>% 
   summarize(
     Poblacion          = sum(PONDERA),
@@ -210,10 +212,9 @@ summary (EPH2019_2023CAES$Preca_cond_lab) # promedio: 10 puntos de precariedad
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>% filter (ESTADO == 1, CAT_OCUP == 3) %>%  #ocupados asalariados
   mutate(
-    Preca_forma_contrat = ifelse (PP07C==1, yes = 10,no= 0))
-calculate_tabulates (EPH2019_2023CAES, "ANO4", " Preca_forma_contrat", add.percentage = "col", "PONDERA")    
-summary(EPH2019_2023CAES$ Preca_forma_contrat)
-
+    Preca_forma_contrat= ifelse (PP07C==1, yes = 10,no= 0))
+calculate_tabulates (EPH2019_2023CAES, "ANO4", "Preca_forma_contrat", add.percentage = "col", "PONDERA")    
+summary(EPH2019_2023CAES$Preca_forma_contrat)
 
 #Preca.cuentaprop (TAREA: chequear si la pp03j se cruza con cat_ocup cuentapropistas)
 
@@ -228,38 +229,39 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 table(EPH2019_2023CAES$DECOCUR)
 table(EPH2019_2023CAES$P21)
 
-EPH2019_2023CAES = EPH2019_2023CAES %>%
-  filter(ESTADO==1 & CAT_OCUP %in% c(2, 3)) %>%  # Filtrar empleados asalariados y cuentapropistas
-  mutate(Ingreso_para_imputar = case_when(
-    P21 == -9 ~ NA_real_,  # Reemplazar -9 con NA
-    P21 == 0 ~ NA_real_,   # Reemplazar 0 con NA
-    TRUE ~ P21             # Mantener los demás valores
-  ))
-
-
-
-#Imputo un ingreso a todos los NA (0,-9)
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
-  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>%
-  group_by(across(c(ANO4, sexo, grupos_etarios, region_etiqueta, caes_eph_cod))) %>%
-  mutate(P21_imputado_AC = ifelse(is.na(Ingreso_para_imputar), mean(Ingreso_para_imputar, na.rm = TRUE), Ingreso_para_imputar)) %>%
+  mutate(
+    P21 = as.numeric(as.character(P21)),  # Convierte P21 a numérico
+    Ingreso_para_imputar = case_when(
+      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & P21 %in% c(-9, 0) ~ NA_real_,  # Solo afecta a los casos filtrados
+      TRUE ~ P21  # Mantiene el resto sin cambios
+    )
+  )
+
+table(EPH2019_2023CAES$Ingreso_para_imputar)
+#Imputo un ingreso a todos los NA (0,-9) toda vez que sean ocupados (asalariados o cuentapropia). NO ELIMINA CASOS (no uso filter)
+EPH2019_2023CAES <- EPH2019_2023CAES %>%
+  group_by(across(c(ANO4, SEXO, grupos_etarios, region_etiqueta, caes_eph_cod))) %>%
+  mutate(
+    P21_imputado_AC = case_when(
+      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & is.na(Ingreso_para_imputar) ~ mean(Ingreso_para_imputar, na.rm = TRUE),  
+      TRUE ~ Ingreso_para_imputar  # Mantiene los valores originales en los otros casos
+    )
+  ) %>%
   ungroup()
 
 
-EPH2019_2023CAES %>% 
-  select(sexo, ANO4, P21, P21_imputado_AC, DECOCUR_imputado, Preca_ingresos_deciles) -> base_chiquita
-view(base_chiquita)
 
-
-#Divido en deciles la variable P21_imputado: 
+#Divido en deciles la variable P21_imputado_AC: 
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
   group_by(ANO4) %>%  # Si los deciles deben calcularse por año
   mutate(DECOCUR_imputado = cut(P21_imputado_AC,
-                                breaks = quantile(P21_imputado, probs = seq(0, 1, by = 0.1), na.rm = TRUE),
+                                breaks = quantile(P21_imputado_AC, probs = seq(0, 1, by = 0.1), na.rm = TRUE),
                                 labels = 1:10,
                                 include.lowest = TRUE)) %>%
   ungroup()
+
 
 #agrupo deciles en la variable Preca_ingresos_deciles
 
@@ -272,6 +274,10 @@ EPH2019_2023CAES=EPH2019_2023CAES %>%
   )
 
 round(prop.table(table(EPH2019_2023CAES$Preca_ingresos_deciles)) * 100, 2)
+
+EPH2019_2023CAES %>% 
+  select(SEXO, ANO4, P21, P21_imputado_AC, DECOCUR_imputado, Preca_ingresos_deciles) -> base_chiquita
+view(base_chiquita)
 
 #asigno valores numéricos a la variable de ingresos
 
@@ -290,8 +296,7 @@ unique(EPH2019_2023CAES$PP03J)
 EPH2019_2023CAES=EPH2019_2023CAES %>%
   mutate (Preca_ingresos_buscarotrotrabajo= as.numeric(case_when (
     PP03J == 1 ~ 10,
-    PP03J == 2 ~ 0,
-    TRUE ~ NA_real_) 
+    PP03J == 2 ~ 0) 
   ))
 table(EPH2019_2023CAES$Preca_ingresos_buscarotrotrabajo)
 
@@ -302,11 +307,11 @@ class(EPH2019_2023CAES$PP03C)
 
 EPH2019_2023CAES=EPH2019_2023CAES %>%
   mutate (Preca_intensidad_pluriempleo= as.numeric(case_when (
-    PP03C == 1 ~ 0,
-    PP03C == 2 ~ 10,
-    TRUE ~ NA_real_) 
+    PP03C %in% 0:1 ~0,
+    PP03C == 2 ~ 10) 
   ))
 table(EPH2019_2023CAES$Preca_intensidad_pluriempleo)
+
 
 #y sobreocupado (Preca_intensidad_sobreocup)
 
@@ -315,27 +320,99 @@ class(EPH2019_2023CAES$INTENSI)
 EPH2019_2023CAES=EPH2019_2023CAES %>%
   mutate (Preca_intensidad_sobreocup= as.numeric(case_when (
     INTENSI == 3 ~ 10,
-    INTENSI %in% c("1", "2", "4") ~ 0,
-    TRUE ~ NA_real_) 
+    INTENSI %in% c("1", "2", "4") ~ 0) 
   ))
 table(EPH2019_2023CAES$Preca_intensidad_sobreocup)
-
-
-
-#creo variables por tipo de precarización y una que agrupa tres categorías de precariedad: 
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
   mutate(
     Preca_ingresos = as.numeric(Preca_ingresos_deciles_N +
                                   Preca_ingresos_buscarotrotrabajo), 
     Preca_intensidad = as.numeric(Preca_intensidad_sobreocup +
-                                    Preca_intensidad_pluriempleo), 
-    Niveles_precariedad_total = case_when(
-      precariedad_total %in% 0:30  ~ "Precariedad baja",
-      precariedad_total %in% 31:60 ~ "Precariedad media",
-      precariedad_total %in% 61:100 ~ "Precariedad alta",
-      TRUE ~ "Otro"  # Para evitar valores NA
-    )
+                                    Preca_intensidad_pluriempleo))
+
+#VARIABLE DE RESUMEN: PRECARIEDAD TOTAL
+
+EPH2019_2023CAES <- EPH2019_2023CAES %>%
+  mutate(precariedad_total = as.numeric(Preca_ingresos +
+                                        Preca_intensidad +
+                                        Preca_cond_lab+
+                                        Preca_forma_contrat
+  ))
+unique(EPH2019_2023CAES$precariedad_total)
+table(EPH2019_2023CAES$precariedad_total)
+
+#variables por tipo de precarización y una que agrupa tres categorías de precariedad: 
+
+EPH2019_2023CAES <- EPH2019_2023CAES %>% 
+  mutate (Niveles_precariedad_total = case_when(
+      precariedad_total%in% 0:30  ~ "Precariedad baja",
+      precariedad_total%in% 31:60 ~ "Precariedad media",
+      precariedad_total%in% 61:100 ~ "Precariedad alta"
+    ))
+  
+table(EPH2019_2023CAES$Niveles_precariedad_total)
+# PUNTO 3: 
+
+
+#calculo cantidad de asalariados precarios por categoria
+
+
+asalariados_precarios <- EPH2019_2023CAES %>% 
+  filter(ESTADO == 1, CAT_OCUP == 3) %>% 
+  summarise(
+    Preca_ingresos = sum(PONDERA[Preca_ingresos_deciles_N ==30], na.rm = TRUE) + 
+      sum(PONDERA[Preca_ingresos_buscarotrotrabajo > 0], na.rm = TRUE),
+    Preca_intensidad = sum(PONDERA[Preca_intensidad_pluriempleo > 0], na.rm = TRUE) + 
+      sum(PONDERA[Preca_intensidad_sobreocup > 0], na.rm = TRUE), 
+    Preca_cond_lab = sum(PONDERA[Preca_cond_lab > 0], na.rm = TRUE), 
+    Preca_forma_contrat = sum (PONDERA [Preca_forma_contrat> 0], na.rm = TRUE),
+    Asalariados = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 3], na.rm = TRUE)
   )
+asalariados_precarios <- asalariados_precarios %>%
+  mutate(Proporcion_precariedad_ingresos = (Preca_ingresos / Asalariados)*100)
+asalariados_precarios <- asalariados_precarios %>%
+  mutate(Proporcion_precariedad_intensidad = (Preca_intensidad / Asalariados)*100)
+asalariados_precarios <- asalariados_precarios %>%
+  mutate(Proporcion_precariedad_con_lab = (Preca_cond_lab / Asalariados)*100)
+asalariados_precarios <- asalariados_precarios %>%
+  mutate(Proporcion_precariedad_contrat = (Preca_forma_contrat / Asalariados)*100)
 
 
+colnames(EPH2019_2023CAES)
+
+tabulados <- list(
+  g_etarios_x_precariedad = calculate_tabulates(EPH2019_2023CAES, 
+                                                x = "grupos_etarios", 
+                                                y = "Niveles_precariedad_total", 
+                                                weights = "PONDERA", 
+                                                add.percentage = "row"),
+  
+  ambito_x_precariedad = calculate_tabulates(EPH2019_2023CAES, 
+                                             x = "ambito_establecimiento", 
+                                             y = "Niveles_precariedad_total", 
+                                             weights = "PONDERA", 
+                                             add.percentage = "row"),
+  
+  sexo_x_precariedad = calculate_tabulates(EPH2019_2023CAES, 
+                                           x = "SEXO", 
+                                           y = "Niveles_precariedad_total", 
+                                           weights = "PONDERA", 
+                                           add.percentage = "row"),
+  
+  lugarnacimiento_x_precariedad = calculate_tabulates(EPH2019_2023CAES, 
+                                                      x = "lugar_nacimiento", 
+                                                      y = "Niveles_precariedad_total", 
+                                                      weights = "PONDERA", 
+                                                      add.percentage = "row"),
+  
+  ambito_x_precaingresos = calculate_tabulates(EPH2019_2023CAES, 
+                                               x = "ambito_establecimiento", 
+                                               y = "Preca_ingresos", 
+                                               weights = "PONDERA", 
+                                               add.percentage = "row"), 
+  ambito_x_precaintensidad = calculate_tabulates(EPH2019_2023CAES, 
+                                                 x = "ambito_establecimiento", 
+                                                 y = "Preca_intensidad", 
+                                                 weights = "PONDERA", 
+                                                 add.percentage = "row"))
