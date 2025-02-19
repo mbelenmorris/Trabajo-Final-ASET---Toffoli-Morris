@@ -37,23 +37,54 @@ EPH2019_2023CAES = EPH2019_2023CAES %>%
     REGION ==42 ~ "Cuyo",
     REGION ==44 ~ "Patagonia"), 
     levels=c("AMBA", "Centro", "NEA", "Cuyo", "Patagonia", "NOA")))
-
+colnames(EPH2019_2023CAES)
 
 #CANTIDAD DE EMPLEADOS
+
+summary(EPH2019_2023CAES$CANT.EMPLEADOS)
+calculate_tabulates(EPH2019_2023CAES, "CANT.EMPLEADOS")
+
+unique(EPH2019_2023CAES$CANT.EMPLEADOS)
+class(EPH2019_2023CAES$CANT.EMPLEADOS)
+table(as_factor(EPH2019_2023CAES$CANT.EMPLEADOS), useNA = "always")
+
+
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
-    mutate(CANT.EMPLEADOS = as.factor(as.numeric(CANT.EMPLEADOS))) %>%  # Convierte a numérico puro
+  mutate(CANT.EMPLEADOS = as_factor(CANT.EMPLEADOS)) %>%  # Convertir a factor para trabajar con etiquetas
   mutate(CANT.EMPLEADOS = case_when(
+    CANT.EMPLEADOS == "0" ~ 0,
+    CANT.EMPLEADOS == "1 persona" ~ 1,
+    CANT.EMPLEADOS == "2 personas" ~ 2,
+    CANT.EMPLEADOS == "3 personas" ~ 3,
+    CANT.EMPLEADOS == "4 personas" ~ 4,
+    CANT.EMPLEADOS == "5 personas" ~ 5,
+    CANT.EMPLEADOS == "6 a 10 personas" ~ 6,
+    CANT.EMPLEADOS == "11 a 25 personas" ~ 11,
+    CANT.EMPLEADOS == "26 a 40 personas" ~ 26,
+    CANT.EMPLEADOS == "de 41 a 100 personas" ~ 41,
+    CANT.EMPLEADOS == "de 101 a 200 personas" ~ 101,
+    CANT.EMPLEADOS == "de 201 a 500 personas" ~ 201,
+    CANT.EMPLEADOS == "mas de 500 personas" ~ 501,
+    CANT.EMPLEADOS == "Ns./Nr." ~ 99,
+    TRUE ~ NA_real_  # Asignar NA a otros valores
+  )) %>%
+  mutate(CANT.EMPLEADOS = case_when(
+    is.na(CANT.EMPLEADOS) ~ NA_character_,
     CANT.EMPLEADOS == 0 ~ "0",
     CANT.EMPLEADOS %in% 1:6 ~ "1 a 10",
-    CANT.EMPLEADOS %in% c(7,8) ~ "11 a 40",
-    CANT.EMPLEADOS %in% c(9,10) ~ "41 a 200",
-    CANT.EMPLEADOS %in% c(11,12)  ~ "Más de 200",
+    CANT.EMPLEADOS %in% 11:25 ~ "11 a 40",
+    CANT.EMPLEADOS %in% 26:40 ~ "41 a 200",
+    CANT.EMPLEADOS %in% 41:500 ~ "Más de 200",
     CANT.EMPLEADOS == 99 ~ "Ns./Nr.",
-    TRUE ~ NA_character_  # Captura otros valores como NA
+    TRUE ~ NA_character_
   )) %>%
   mutate(CANT.EMPLEADOS = factor(CANT.EMPLEADOS, 
                                  levels = c("0", "1 a 10", "11 a 40", "41 a 200", "Más de 200", "Ns./Nr."), 
                                  ordered = TRUE))
+
+# Verificar el resultado
+table(EPH2019_2023CAES$CANT.EMPLEADOS, useNA = "always")
+
 
 class(EPH2019_2023CAES$CANT.EMPLEADOS)# "ordered" "factor" 
 
@@ -102,6 +133,15 @@ table(EPH2019_2023CAES$nivel_educativo_completo)
 poblacion_x_año<- EPH2019_2023CAES %>% group_by (ANO4) %>% summarize(sum(PONDERA))
 sexo_año<- EPH2019_2023CAES %>% group_by (SEXO,ANO4) %>% summarize(sum(PONDERA))
 
+#grupos etarios
+
+unique(EPH2019_2023CAES$grupos_etarios)
+gruposetarios_año_pond <- EPH2019_2023CAES %>% filter (!is.na(grupos_etarios)) %>% 
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+
 #distribución y porcentajes por sexo, estado, categoría ocupacional, categoría inactividad
 
 #sexo
@@ -118,18 +158,33 @@ Muestra_Gruposetarios1=EPH2019_2023CAES %>%
   adorn_totals() %>% 
   adorn_pct_formatting()
 
+gruposetarios_año_pond <- EPH2019_2023CAES %>% filter(!is.na(grupos_etarios)) %>% 
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+
 #lugar de nacimiento
-Muestra_lugarnacimiento=EPH2019_2023CAES %>%
+unique(EPH2019_2023CAES$lugar_nacimiento)
+
+Muestra_lugarnacimiento=EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
   group_by(ANO4) %>% 
   tabyl(lugar_nacimiento) %>%
   adorn_totals() %>% 
   adorn_pct_formatting()
 
-#cant.empleados --tamaño del establecimiento
+lugarnacimiento_año_pond <- EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
+  group_by(ANO4, lugar_nacimiento) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#cant.empleados --tamaño del establecimiento  
 cant_empleados_pond <- EPH2019_2023CAES %>% 
   group_by(ANO4, CANT.EMPLEADOS) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+calculate_tabulates(EPH2019_2023CAES, "CANT.EMPLEADOS", "CAT_OCUP", "PONDERA", add.percentage = "col") #TIENE MUCHOS 0 Y na por los que no se realiza la entrevista y los ns/nr.
 
 #sector de actividad
 sector.de.actividad_pond <- EPH2019_2023CAES %>% 
@@ -156,7 +211,7 @@ cat_inactividad_pond <- EPH2019_2023CAES %>%  filter(!is.na(CAT_INAC)& CAT_INAC!
   summarize(casos = sum(PONDERA),.groups = "drop") %>% group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
-#Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene. Por eso uso el df con todas las variables.  
+#Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene. 
 
 Datos_MT_1923<- EPH2019_2023CAES %>%  
   group_by(ANO4) %>% 
@@ -190,6 +245,178 @@ Datos_MT_1923<- EPH2019_2023CAES %>%
   mutate(across(starts_with("Tasa"), ~ round(., 1)))
 
 TasasMT_1923 <- Datos_MT_1923 %>% select(ANO4, starts_with("Tasa"))
+
+#incorporo cruces entre variables para descripción de la población de la muestra
+
+colnames(EPH2019_2023CAES)
+
+#ESTADO y combinaciones con sexo y edad
+unique(EPH2019_2023CAES$ESTADO)
+#condición de actividad y sexo
+Estado_sexo <-  EPH2019_2023CAES %>%  
+  filter(!is.na(ESTADO) & ESTADO != 0) %>%  # Filtrar NA y ESTADO =/= a 0
+  group_by(ANO4, SEXO, ESTADO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#Población ocupada y sexo
+Estado1_sexo <-  EPH2019_2023CAES %>%  
+  filter(!is.na(ESTADO) & ESTADO == 1) %>%  # Filtrar NA y ESTADO = 1
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#POblación desocupada y sexo
+Estado2_sexo <-  EPH2019_2023CAES %>%  
+  filter(!is.na(ESTADO) & ESTADO == 2) %>%  # Filtrar NA y ESTADO =   2
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#Población desocupada y edad
+Estado2_gruposetarios <- EPH2019_2023CAES %>%  
+  filter(!is.na(ESTADO) & ESTADO == 2 & !is.na(grupos_etarios)) %>%  # Excluir NA en ESTADO y grupos_etarios
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#Población inactiva y sexo
+Estado3y4_sexo <-  EPH2019_2023CAES %>%  
+  filter(!is.na(ESTADO) & ESTADO %in% c(3, 4)) %>%  # Filtrar NA y quedarnos con estado 3 y 4
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+#Población ocupada por sexo y edad
+Estado1_sexo_edad <- EPH2019_2023CAES %>%  
+  filter(!is.na(grupos_etarios) & ESTADO == 1) %>%  # Filtrar NA en grupos_etarios y quedarnos con ESTADO == 1
+  group_by(ANO4, SEXO, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#Población desocupada por sexo y edad
+Estado2_sexo_gruposetarios <- EPH2019_2023CAES %>%  
+  filter(!is.na(grupos_etarios) & ESTADO == 2) %>%  # Filtrar NA en grupos_etarios y quedarnos con ESTADO == 2
+  group_by(ANO4, SEXO, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#CAT_OCUP, sexo y edad
+
+unique(EPH2019_2023CAES$CAT_OCUP)
+unique(EPH2019_2023CAES$grupos_etarios)
+#vemos cómo se comportan las cat ocupacionales según sexo y grupo etario. 
+#creé varios objetos nuevos porque se me complica la visualización, seguro podamos sacar otras conclusiones luego cuando mejoremos las tablas/gráficos
+
+Catocup1_sexo<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 1) %>%  # QUEDARME SOLO CON PATRONES
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup2_sexo<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 2) %>%  # QUEDARME SOLO CON cuenta propia
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup3_sexo<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 3) %>%  # QUEDARME SOLO CON asalariados
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup4_sexo<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 4) %>%  # QUEDARME SOLO CON trabajadores familiares
+  group_by(ANO4, SEXO) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup1_grupoetarios<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 1 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON PATRONES y valores válidos en grupos etarios
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup2_grupoetarios<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 2 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON cuenta propia y valores válidos en grupos etarios
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup3_grupoetarios<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 3 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON asalariades y valores válidos en grupos etarios
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+Catocup4_grupoetarios<- EPH2019_2023CAES %>%  
+  filter(CAT_OCUP == 4 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON trab familiares y valores válidos en grupos etarios
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+Catocup_sexo_edad <- EPH2019_2023CAES %>%  
+  filter(!is.na(grupos_etarios) & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  # Filtrar NA en grupos_etarios y excluir CAT_OCUP == 0 e ==9
+  group_by(ANO4, CAT_OCUP, SEXO, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#Categoría ocupacional por sector de actividad, tamaño de establecimiento 
+
+
+#categoría ocupacional por sector de actividad
+
+Catocup_CAES<- EPH2019_2023CAES %>%  #este código está bueno para generar una visual pero no es práctico como table
+  filter(!is.na(caes_eph_label) & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  
+  group_by(ANO4, CAT_OCUP, caes_eph_label) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#categoría ocupacional por tamaño de establecimiento
+
+Catocup_cantempleados<- EPH2019_2023CAES %>%  
+  filter(!is.na(CANT.EMPLEADOS) & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  
+  group_by(ANO4, CAT_OCUP, CANT.EMPLEADOS) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#categoría ocupacional por ámbito- NO LLEGUÉ A ANALIZAR
+Catocup_ambito<- EPH2019_2023CAES %>%  
+  filter(!is.na(PP04A) & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  
+  group_by(ANO4, CAT_OCUP, PP04A) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+#categoría ocupacional por procedencia migrante-- este es porque me engolosiné
+unique(EPH2019_2023CAES$CH15)
+Catocup_migrante<- EPH2019_2023CAES %>% 
+  filter(CH15 ==4 & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  
+  group_by(ANO4, CAT_OCUP) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+Catocup_argentines<- EPH2019_2023CAES %>% 
+  filter((CH15 ==1|CH15 ==2|CH15 ==3) & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  
+  group_by(ANO4, CAT_OCUP) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+
+
 
 
 #VARIABLE PRECARIEDAD 
