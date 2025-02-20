@@ -4,6 +4,8 @@ library(dplyr)
 library(janitor)
 library(srvyr)
 library(haven)
+install.packages("labelled")  # Si no lo tienes instalado
+library(labelled)
 
 Variables=c("CODUSU","ANO4", "TRIMESTRE", "REGION", "AGLOMERADO", "PONDERA", "CH04","CH06","ESTADO", "CAT_OCUP", "CAT_INAC",
             "PP04A", "PP04B_COD", "CH15", "NIVEL_ED", "PP04C", "PP03C", "PP03G", "PP03I", "PP03J", "P21", "INTENSI",  "PP07C", "PP07E", "PP07G1", "PP07G2", "PP07G3", "PP07G4", "PP07H", "PP07I", "DECOCUR", "PONDIIO", "PP05H")
@@ -13,9 +15,9 @@ saveRDS(EPH2019_2023CAES, file = "EPH2019_2023CAES.rds")
 EPH2019_2023CAES <- EPH2019_2023CAES %>% eph::organize_labels()
 EPH2019_2023CAES=organize_caes(EPH2019_2023CAES)
 
+TABLAP21 <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", "PONDERA")#lo hice para ver la distribución original de p21
 
 #Variables nuevas y recodificadas (SEXO, PP04B_COD (CAES), PP04C(CANTIDAD EMPLEADOS), Grupos etarios, ámbito del establecimiento, región, lugar de nacimiento, nivel_educativo_completo)
-
 
 #SEXO
 EPH2019_2023CAES=EPH2019_2023CAES %>% mutate(CH04=case_when(
@@ -178,13 +180,11 @@ lugarnacimiento_año_pond <- EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
-#cant.empleados --tamaño del establecimiento  
-cant_empleados_pond <- EPH2019_2023CAES %>% 
+#cant.empleados/tamaño del establecimiento  
+cant_empleados_pond <- EPH2019_2023CAES %>% filter(!is.na(CANT.EMPLEADOS) & CANT.EMPLEADOS !=0)%>%
   group_by(ANO4, CANT.EMPLEADOS) %>% 
   summarize(casos = sum(PONDERA)) %>% 
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
-
-calculate_tabulates(EPH2019_2023CAES, "CANT.EMPLEADOS", "CAT_OCUP", "PONDERA", add.percentage = "col") #TIENE MUCHOS 0 Y na por los que no se realiza la entrevista y los ns/nr.
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1)) 
 
 #sector de actividad
 sector.de.actividad_pond <- EPH2019_2023CAES %>% 
@@ -246,7 +246,7 @@ Datos_MT_1923<- EPH2019_2023CAES %>%
 
 TasasMT_1923 <- Datos_MT_1923 %>% select(ANO4, starts_with("Tasa"))
 
-#incorporo cruces entre variables para descripción de la población de la muestra
+#en lo que sigue, incorporamos cruces entre variables para descripción de la población de la muestra
 
 colnames(EPH2019_2023CAES)
 
@@ -375,7 +375,7 @@ Catocup_sexo_edad <- EPH2019_2023CAES %>%
 
 #categoría ocupacional por sector de actividad
 
-Catocup_CAES<- EPH2019_2023CAES %>%  #este código está bueno para generar una visual pero no es práctico como table
+Catocup_CAES<- EPH2019_2023CAES %>%  #este código está bueno para generar una visual pero no es práctico como table para leer
   filter(!is.na(caes_eph_label) & CAT_OCUP != 0 & CAT_OCUP != 9 ) %>%  
   group_by(ANO4, CAT_OCUP, caes_eph_label) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
@@ -416,78 +416,148 @@ Catocup_argentines<- EPH2019_2023CAES %>%
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
 
-
-
-
-#VARIABLE PRECARIEDAD 
+#Construimos la VARIABLE PRECARIEDAD 
 
 ##CONDICIONES DE TRABAJO
 
-EPH2019_2023CAES <- EPH2019_2023CAES %>% filter (ESTADO == 1, CAT_OCUP == 3) %>%  #ocupados asalariados
+EPH2019_2023CAES <- EPH2019_2023CAES %>%   #ocupados asalariados. uso ifelse dentro de mutate en lugar de filter, si no se peierden todos los casos q no son ocup asalariados
   mutate(
-    Preca_cond_lab = ifelse (PP07H==2, yes = 10,no= 0)+ #descuento jubilatorio (ojo porque hay valores NA Y 0)EN este caso y en el que sigue asigné los mismos valores del indicador
+    Preca_cond_lab = ifelse (ESTADO==1& CAT_OCUP==3,
+      (ifelse (PP07H==2, yes = 10,no= 0)+ #descuento jubilatorio (ojo porque hay valores NA Y 0)EN este caso y en el que sigue asigné los mismos valores del indicador
       ifelse (PP07G1==2, yes = 4,no= 0)+ #VACACIONES PAGAS
       ifelse (PP07G2==2, yes = 4,no= 0)+ #aguinaldo
       ifelse (PP07G3==2, yes = 4,no= 0)+ #LICENCIAS MÉDICAS
-      ifelse (PP07G4==2, yes = 8,no= 0)) #Obra social
-unique(EPH2019_2023CAES$Preca_cond_lab)  #0 30 12 10  4 22 26 18  8 16 14 20
-calculate_tabulates (EPH2019_2023CAES, "ANO4", "Preca_cond_lab", add.percentage = "col", "PONDERA")
-summary (EPH2019_2023CAES$Preca_cond_lab) # promedio: 10 puntos de precariedad
+      ifelse (PP07G4==2, yes = 8,no= 0)), #Obra social
+      NA_real_)) # Asigna NA a los que no cumplen la condición   
 
+unique(EPH2019_2023CAES$Preca_cond_lab)
 
 ##FORMAS DE CONTRATACIÓN
 
-EPH2019_2023CAES <- EPH2019_2023CAES %>% filter (ESTADO == 1, CAT_OCUP == 3) %>%  #ocupados asalariados
+EPH2019_2023CAES <- EPH2019_2023CAES %>%
   mutate(
-    Preca_forma_contrat= ifelse (PP07C==1, yes = 10,no= 0))
-calculate_tabulates (EPH2019_2023CAES, "ANO4", "Preca_forma_contrat", add.percentage = "col", "PONDERA")    
+    Preca_forma_contrat = ifelse(ESTADO == 1 & CAT_OCUP == 3, 
+                                 ifelse(PP07C == 1, 10, 
+                                        ifelse(PP07C == 9, NA_real_, 0)),  # PP07C == 9 asigna NA
+                                 NA_real_)  # Asigna NA a los que no cumplen la condición
+  )
+
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_forma_contrat", weight= "PONDERA", add.percentage = "col")
+
 summary(EPH2019_2023CAES$Preca_forma_contrat)
 
-#Preca.cuentaprop (TAREA: chequear si la pp03j se cruza con cat_ocup cuentapropistas)
+#Preca.cuentaprop 
+
+
+#pruebo la distribución de cat_ocup ,desaparecieron todas las categorías ocupacionales menos la 3. Esto es porque usé filter en la creación de las variables anteriores, y perdí las obs para otras cat ocup. ya está resuelto
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "CAT_OCUP", weight= "PONDERA", add.percentage = "col")
+
+#(TAREA: chequear si la pp05h se cruza con cat_ocup cuentapropistas--sí se cruza:
+estabilidadcuentaprop <- EPH2019_2023CAES %>%  filter(CAT_OCUP == 2 & ESTADO== 1 ) %>%  
+  group_by(ANO4, CAT_OCUP, PP05H) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>% 
   mutate(
-    preca.cuentaprop = ifelse(CAT_OCUP == 2 & PP05H %in% c(1,2,3,4), 10, 0)  # Se aplica solo a CAT_OCUP == 2
+    preca.cuentaprop = ifelse(CAT_OCUP == 2, 
+                              ifelse(PP05H %in% c(1,2,3,4), 10, 
+                                     ifelse(PP05H == 9, 99, 0)), #99 son los cuenta propia que responden 
+                              NA_real_)  # NA para los que no son CAT_OCUP == 2
   )
 
 
+
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "preca.cuentaprop", weight= "PONDERA", add.percentage = "col")
+
 ##PRECARIEDAD POR INGRESOS 
+
+
+str(EPH2019_2023CAES$P21)  # Muestra la estructura de la variable: es labelled. 
+#(puede provenir de una base de spss o stata, por eso tal vez -9 y 0 sigan apareciendo, no son números estandar en r)
+library(haven)  # Necesario para manejar variables labelled
+prueba2p21 <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", "PONDERA")
+
+EPH2019_2023CAES <- EPH2019_2023CAES %>%
+  mutate(P21 = as.numeric(as.character(P21)))  # Convierte P21 de "labelled" a numérico. esto porque me traía problemas para eliminar los valores -9 y 0
+
+# Verifica los valores únicos de P21 después de la conversión
+unique(EPH2019_2023CAES$P21)
+
+
+P21numPRUEBA <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", weight= "PONDERA", add.percentage = "col")
 
 table(EPH2019_2023CAES$DECOCUR)
 table(EPH2019_2023CAES$P21)
 
+# Paso 1: Convertir P21 y limpiar -9 y 0 correctamente
+
+
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
   mutate(
-    P21 = as.numeric(as.character(P21)),  # Convierte P21 a numérico
+    P21 = as.numeric(as_factor(P21)),  # Convierte P21 a numérico después de convertirlo a factor
     Ingreso_para_imputar = case_when(
-      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & P21 %in% c(-9, 0) ~ NA_real_,  # Solo afecta a los casos filtrados
-      TRUE ~ P21  # Mantiene el resto sin cambios
+      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & P21 %in% c(-9, 0) ~ NA_real_,  # Reemplaza -9 y 0 por NA
+      TRUE ~ P21  # Mantiene los valores originales
     )
   )
 
-table(EPH2019_2023CAES$Ingreso_para_imputar)
-#Imputo un ingreso a todos los NA (0,-9) toda vez que sean ocupados (asalariados o cuentapropia). NO ELIMINA CASOS (no uso filter)
+INGRESOPARAIMPUTARPRUEBA <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "Ingreso_para_imputar", weight= "PONDERA", add.percentage = "col")
+unique(EPH2019_2023CAES$Ingreso_para_imputar)
+
+
+# Verificar si la conversión fue exitosa
+table(EPH2019_2023CAES$Ingreso_para_imputar, useNA = "always")
+
+# Paso 2: Imputación de ingresos por grupo
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
-  group_by(across(c(ANO4, SEXO, grupos_etarios, region_etiqueta, caes_eph_cod))) %>%
+  group_by(ANO4, SEXO, grupos_etarios, region_etiqueta, caes_eph_cod) %>%
   mutate(
     P21_imputado_AC = case_when(
-      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & is.na(Ingreso_para_imputar) ~ mean(Ingreso_para_imputar, na.rm = TRUE),  
-      TRUE ~ Ingreso_para_imputar  # Mantiene los valores originales en los otros casos
+      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & is.na(Ingreso_para_imputar) ~ mean(Ingreso_para_imputar[Ingreso_para_imputar > 0], na.rm = TRUE),  
+      TRUE ~ Ingreso_para_imputar  # Mantener los valores originales
     )
   ) %>%
   ungroup()
 
+# Verificar si aún quedan -9 y 0 en la variable final
+table(EPH2019_2023CAES$P21_imputado_AC, useNA = "always")
+
+# Comprobar con calculate_tabulates
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21_imputado_AC", weight= "PONDERA", add.percentage = "col")
 
 
-#Divido en deciles la variable P21_imputado_AC: 
+#creamos variable decocur imputado--el problema aparece acá. 
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
-  group_by(ANO4) %>%  # Si los deciles deben calcularse por año
-  mutate(DECOCUR_imputado = cut(P21_imputado_AC,
-                                breaks = quantile(P21_imputado_AC, probs = seq(0, 1, by = 0.1), na.rm = TRUE),
-                                labels = 1:10,
-                                include.lowest = TRUE)) %>%
+  group_by(ANO4) %>%
+  group_modify(~ {
+    # Calcular los deciles asegurando que sean únicos
+    deciles <- quantile(.x$P21_imputado_AC, probs = seq(0, 1, by = 0.1), na.rm = TRUE) %>% unique()
+    
+    # Asegurar que haya exactamente 11 valores (mínimo y máximo incluidos)
+    while (length(deciles) < 11) {
+      deciles <- unique(c(deciles, deciles + .Machine$double.eps)) # Pequeña corrección para evitar duplicados exactos
+    }
+    deciles <- sort(deciles)
+    
+    # Aplicar los deciles a la columna
+    .x <- .x %>%
+      mutate(
+        DECOCUR_imputado = cut(P21_imputado_AC,
+                               breaks = deciles,
+                               labels = 1:10,
+                               include.lowest = TRUE)
+      )
+    
+    return(.x)
+  }) %>%
   ungroup()
+colnames(EPH2019_2023CAES)
+
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "DECOCUR_imputado", weight= "PONDERA", add.percentage = "col")
 
 
 #agrupo deciles en la variable Preca_ingresos_deciles
@@ -501,6 +571,8 @@ EPH2019_2023CAES=EPH2019_2023CAES %>%
   )
 
 round(prop.table(table(EPH2019_2023CAES$Preca_ingresos_deciles)) * 100, 2)
+
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_ingresos_deciles", weight= "PONDERA", add.percentage = "col")
 
 EPH2019_2023CAES %>% 
   select(SEXO, ANO4, P21, P21_imputado_AC, DECOCUR_imputado, Preca_ingresos_deciles) -> base_chiquita
