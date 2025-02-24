@@ -4,8 +4,9 @@ library(dplyr)
 library(janitor)
 library(srvyr)
 library(haven)
-install.packages("labelled")  # Si no lo tienes instalado
-library(labelled)
+
+
+
 
 Variables=c("CODUSU","ANO4", "TRIMESTRE", "REGION", "AGLOMERADO", "PONDERA", "CH04","CH06","ESTADO", "CAT_OCUP", "CAT_INAC",
             "PP04A", "PP04B_COD", "CH15", "NIVEL_ED", "PP04C", "PP03C", "PP03G", "PP03I", "PP03J", "P21", "INTENSI",  "PP07C", "PP07E", "PP07G1", "PP07G2", "PP07G3", "PP07G4", "PP07H", "PP07I", "DECOCUR", "PONDIIO", "PP05H")
@@ -188,7 +189,7 @@ cant_empleados_pond <- EPH2019_2023CAES %>% filter(!is.na(CANT.EMPLEADOS) & CANT
 
 #sector de actividad
 sector.de.actividad_pond <- EPH2019_2023CAES %>% 
-    group_by(ANO4, caes_eph_label ) %>% 
+    group_by(ANO4, caes_eph_label) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
@@ -291,6 +292,7 @@ Estado3y4_sexo <-  EPH2019_2023CAES %>%
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 #Población ocupada por sexo y edad
 Estado1_sexo_edad <- EPH2019_2023CAES %>%  
   filter(!is.na(grupos_etarios) & ESTADO == 1) %>%  # Filtrar NA en grupos_etarios y quedarnos con ESTADO == 1
@@ -320,42 +322,49 @@ Catocup1_sexo<- EPH2019_2023CAES %>%
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup2_sexo<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 2) %>%  # QUEDARME SOLO CON cuenta propia
   group_by(ANO4, SEXO) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup3_sexo<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 3) %>%  # QUEDARME SOLO CON asalariados
   group_by(ANO4, SEXO) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup4_sexo<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 4) %>%  # QUEDARME SOLO CON trabajadores familiares
   group_by(ANO4, SEXO) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup1_grupoetarios<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 1 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON PATRONES y valores válidos en grupos etarios
   group_by(ANO4, grupos_etarios) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup2_grupoetarios<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 2 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON cuenta propia y valores válidos en grupos etarios
   group_by(ANO4, grupos_etarios) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup3_grupoetarios<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 3 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON asalariades y valores válidos en grupos etarios
   group_by(ANO4, grupos_etarios) %>% 
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 Catocup4_grupoetarios<- EPH2019_2023CAES %>%  
   filter(CAT_OCUP == 4 & !is.na(grupos_etarios)) %>%  # QUEDARME SOLO CON trab familiares y valores válidos en grupos etarios
   group_by(ANO4, grupos_etarios) %>% 
@@ -416,7 +425,7 @@ Catocup_argentines<- EPH2019_2023CAES %>%
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
 
-#Construimos la VARIABLE PRECARIEDAD 
+#####Construimos la VARIABLE PRECARIEDAD 
 
 ##CONDICIONES DE TRABAJO
 
@@ -428,9 +437,10 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%   #ocupados asalariados. uso ifelse den
       ifelse (PP07G2==2, yes = 4,no= 0)+ #aguinaldo
       ifelse (PP07G3==2, yes = 4,no= 0)+ #LICENCIAS MÉDICAS
       ifelse (PP07G4==2, yes = 8,no= 0)), #Obra social
-      NA_real_)) # Asigna NA a los que no cumplen la condición   
+      0)) # Asigna 0 a los que no cumplen la condición   (si pongo NA en la suma de Precariedad_total me da NA)
 
 unique(EPH2019_2023CAES$Preca_cond_lab)
+table(EPH2019_2023CAES$Preca_cond_lab)
 
 ##FORMAS DE CONTRATACIÓN
 
@@ -438,13 +448,13 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
   mutate(
     Preca_forma_contrat = ifelse(ESTADO == 1 & CAT_OCUP == 3, 
                                  ifelse(PP07C == 1, 10, 
-                                        ifelse(PP07C == 9, NA_real_, 0)),  # PP07C == 9 asigna NA
-                                 NA_real_)  # Asigna NA a los que no cumplen la condición
+                                        ifelse(PP07C == 9, 0, 0)),  # PP07C == 9 asigna 0
+                                 0)  # Asigna NA a los que no cumplen la condición
   )
 
 calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_forma_contrat", weight= "PONDERA", add.percentage = "col")
 
-summary(EPH2019_2023CAES$Preca_forma_contrat)
+table(EPH2019_2023CAES$Preca_forma_contrat)
 
 #Preca.cuentaprop 
 
@@ -465,117 +475,96 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
     preca.cuentaprop = ifelse(CAT_OCUP == 2, 
                               ifelse(PP05H %in% c(1,2,3,4), 10, 
                                      ifelse(PP05H == 9, 99, 0)), #99 son los cuenta propia que responden 
-                              NA_real_)  # NA para los que no son CAT_OCUP == 2
+                              0)  # 0 para los que no son CAT_OCUP == 2
   )
 
 
 
 calculate_tabulates(EPH2019_2023CAES, "ANO4", "preca.cuentaprop", weight= "PONDERA", add.percentage = "col")
 
-##PRECARIEDAD POR INGRESOS 
+##PRECARIEDAD POR INGRESOS (ACA NOS TRABAMOS)
 
-
-str(EPH2019_2023CAES$P21)  # Muestra la estructura de la variable: es labelled. 
-#(puede provenir de una base de spss o stata, por eso tal vez -9 y 0 sigan apareciendo, no son números estandar en r)
-library(haven)  # Necesario para manejar variables labelled
-prueba2p21 <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", "PONDERA")
-
-EPH2019_2023CAES <- EPH2019_2023CAES %>%
-  mutate(P21 = as.numeric(as.character(P21)))  # Convierte P21 de "labelled" a numérico. esto porque me traía problemas para eliminar los valores -9 y 0
-
-# Verifica los valores únicos de P21 después de la conversión
+class(EPH2019_2023CAES$P21)
 unique(EPH2019_2023CAES$P21)
 
-
-P21numPRUEBA <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", weight= "PONDERA", add.percentage = "col")
-
-table(EPH2019_2023CAES$DECOCUR)
-table(EPH2019_2023CAES$P21)
-
-# Paso 1: Convertir P21 y limpiar -9 y 0 correctamente
+#redefino -9 y 0 de ocupados (asalariados y cuentapropistas) como NA, para dps imputar
 
 
-EPH2019_2023CAES <- EPH2019_2023CAES %>%
-  mutate(
-    P21 = as.numeric(as_factor(P21)),  # Convierte P21 a numérico después de convertirlo a factor
-    Ingreso_para_imputar = case_when(
-      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & P21 %in% c(-9, 0) ~ NA_real_,  # Reemplaza -9 y 0 por NA
-      TRUE ~ P21  # Mantiene los valores originales
-    )
-  )
+EPH2019_2023CAES$P21[EPH2019_2023CAES$P21 %in% c(-9, 0)] <- NA
 
-INGRESOPARAIMPUTARPRUEBA <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "Ingreso_para_imputar", weight= "PONDERA", add.percentage = "col")
-unique(EPH2019_2023CAES$Ingreso_para_imputar)
+str(EPH2019_2023CAES)
+sum(is.na(EPH2019_2023CAES %>% 
+            filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+            pull(P21)))  #17049 para imputar
 
+#Imputo un ingreso a todos los NA (0,-9)
 
-# Verificar si la conversión fue exitosa
-table(EPH2019_2023CAES$Ingreso_para_imputar, useNA = "always")
-
-# Paso 2: Imputación de ingresos por grupo
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
   group_by(ANO4, SEXO, grupos_etarios, region_etiqueta, caes_eph_cod) %>%
   mutate(
     P21_imputado_AC = case_when(
-      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & is.na(Ingreso_para_imputar) ~ mean(Ingreso_para_imputar[Ingreso_para_imputar > 0], na.rm = TRUE),  
-      TRUE ~ Ingreso_para_imputar  # Mantener los valores originales
+      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & (is.na(P21) | P21<=0)~ mean(P21, na.rm = TRUE)
+    )) 
+
+#85455 NA después de aplicar el código
+
+EPH2019_2023CAES <- EPH2019_2023CAES %>%
+  group_by(ANO4, SEXO, grupos_etarios, region_etiqueta, caes_eph_cod) %>%
+  mutate(
+    P21_imputado_AC = case_when(
+      ESTADO == 1 & CAT_OCUP %in% c(2, 3) & (is.na(P21) | P21 <= 0) ~ mean(P21, na.rm = TRUE),
+      TRUE ~ P21  # Mantiene los valores originales en los otros casos
     )
   ) %>%
   ungroup()
 
-# Verificar si aún quedan -9 y 0 en la variable final
-table(EPH2019_2023CAES$P21_imputado_AC, useNA = "always")
-
-# Comprobar con calculate_tabulates
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21_imputado_AC", weight= "PONDERA", add.percentage = "col")
 
 
-#creamos variable decocur imputado--el problema aparece acá. 
+PRUEBAingresos = EPH2019_2023CAES %>%
+  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>%  
+  summarise(NA_P21_imputado_AC = sum(is.na(P21_imputado_AC)))
+
+unique(EPH2019_2023CAES$P21_imputado_AC)
+
+#Divido en deciles la variable P21_imputado_AC: 
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
+  filter(!P21_imputado_AC %in% c(0, -9)) %>%  # Filtrar 0 y -9 antes de calcular los deciles
   group_by(ANO4) %>%
-  group_modify(~ {
-    # Calcular los deciles asegurando que sean únicos
-    deciles <- quantile(.x$P21_imputado_AC, probs = seq(0, 1, by = 0.1), na.rm = TRUE) %>% unique()
-    
-    # Asegurar que haya exactamente 11 valores (mínimo y máximo incluidos)
-    while (length(deciles) < 11) {
-      deciles <- unique(c(deciles, deciles + .Machine$double.eps)) # Pequeña corrección para evitar duplicados exactos
-    }
-    deciles <- sort(deciles)
-    
-    # Aplicar los deciles a la columna
-    .x <- .x %>%
-      mutate(
-        DECOCUR_imputado = cut(P21_imputado_AC,
-                               breaks = deciles,
-                               labels = 1:10,
-                               include.lowest = TRUE)
-      )
-    
-    return(.x)
-  }) %>%
+  mutate(
+    Decil_imputado = cut(P21_imputado_AC, 
+                         breaks = quantile(P21_imputado_AC, probs = 0:10 / 10, na.rm = TRUE), 
+                         labels = 1:10, 
+                         include.lowest = TRUE)
+  ) %>%
   ungroup()
-colnames(EPH2019_2023CAES)
 
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "DECOCUR_imputado", weight= "PONDERA", add.percentage = "col")
+sum(is.na(EPH2019_2023CAES %>% 
+            filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+            pull(P21_imputado_AC)))
+
+table(EPH2019_2023CAES$ANO4, EPH2019_2023CAES$Decil_imputado)
+sum(is.na(EPH2019_2023CAES %>% 
+            filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+            pull(Decil_imputado)))
+
+
 
 
 #agrupo deciles en la variable Preca_ingresos_deciles
 
 EPH2019_2023CAES=EPH2019_2023CAES %>%
   mutate (Preca_ingresos_deciles= factor(case_when(
-    DECOCUR_imputado %in% 1:3 ~ "Ingresos bajos", 
-    DECOCUR_imputado %in% 4:8 ~ "Ingresos medios", 
-    DECOCUR_imputado %in% 9:10 ~ "Ingresos altos"), 
+    Decil_imputado %in% 1:3 ~ "Ingresos bajos", 
+    Decil_imputado %in% 4:8 ~ "Ingresos medios", 
+    Decil_imputado %in% 9:10 ~ "Ingresos altos"), 
     levels = c("Ingresos bajos", "Ingresos medios", "Ingresos altos"))
   )
 
+
 round(prop.table(table(EPH2019_2023CAES$Preca_ingresos_deciles)) * 100, 2)
-
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_ingresos_deciles", weight= "PONDERA", add.percentage = "col")
-
 EPH2019_2023CAES %>% 
-  select(SEXO, ANO4, P21, P21_imputado_AC, DECOCUR_imputado, Preca_ingresos_deciles) -> base_chiquita
+  select(SEXO, ANO4, P21, P21_imputado_AC, Decil_imputado, Preca_ingresos_deciles) -> base_chiquita
 view(base_chiquita)
 
 #asigno valores numéricos a la variable de ingresos
@@ -586,6 +575,10 @@ EPH2019_2023CAES=EPH2019_2023CAES %>%
     Preca_ingresos_deciles == "Ingresos medios" ~ 15,
     Preca_ingresos_deciles == "Ingresos altos" ~ 0) 
   ))
+
+sum(is.na(EPH2019_2023CAES %>% 
+            filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+            pull(Preca_ingresos_deciles_N)))
 
 
 #creo variable para "busqueda de otro empleo" que llamo Preca_ingresos_buscarotrotrabajo
@@ -640,17 +633,26 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
   ))
 unique(EPH2019_2023CAES$precariedad_total)
 table(EPH2019_2023CAES$precariedad_total)
+sum(is.na(EPH2019_2023CAES$Niveles_precariedad_total))
 
 #variables por tipo de precarización y una que agrupa tres categorías de precariedad: 
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>% 
-  mutate (Niveles_precariedad_total = case_when(
+  mutate (Niveles_precariedad_total = as.character(case_when(
       precariedad_total%in% 0:30  ~ "Precariedad baja",
       precariedad_total%in% 31:60 ~ "Precariedad media",
       precariedad_total%in% 61:100 ~ "Precariedad alta"
-    ))
+    ), levels = c("Precariedad baja", "Precariedad media", "Precariedad alta")))
   
-table(EPH2019_2023CAES$Niveles_precariedad_total)
+table(EPH2019_2023CAES$Niveles_precariedad_total) 
+
+Precariedad_por_ano <- EPH2019_2023CAES %>%
+  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+  group_by(ANO4, Niveles_precariedad_total) %>%
+  count() %>%
+  rename(Cantidad = n)
+
+print(Precariedad_por_ano)
 # PUNTO 3: 
 
 
