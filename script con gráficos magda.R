@@ -4,7 +4,7 @@ library(dplyr)
 library(janitor)
 library(srvyr)
 library(haven)
-
+library(kableExtra)
 
 
 
@@ -340,40 +340,162 @@ cat_inactividad_pond <- EPH2019_2023CAES %>%  filter(!is.na(CAT_INAC)& CAT_INAC!
   summarize(casos = sum(PONDERA),.groups = "drop") %>% group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
-#Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene. 
 
-Datos_MT_1923<- EPH2019_2023CAES %>%  
+#Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene. 
+# Calcular las tasas y formatearlas como porcentaje
+library(scales)
+
+Datos_MT_1923 <- EPH2019_2023CAES %>%  
   group_by(ANO4) %>% 
   summarize(
     Poblacion          = sum(PONDERA),
-    
     Ocupados          = sum(PONDERA[ESTADO == 1]),
-    
     Desocupados       = sum(PONDERA[ESTADO == 2]),
-    
-    PNEA= sum(PONDERA[ESTADO %in% c(3, 4)]), 
-    
-    PEA               = Ocupados + Desocupados,
-    
+    PNEA               = sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PEA                = Ocupados + Desocupados,
     Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
-    
     Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
-    
     Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
-    
     Subocupados       = Suboc_demandante + Suboc_no_demand,
-    'Tasa Actividad' = (PEA / Poblacion) * 100,
+    'Tasa Actividad'  = (PEA / Poblacion) * 100,
     'Tasa Inactividad' = (PNEA / Poblacion) * 100,
-    'Tasa Empleo' = (Ocupados / Poblacion) * 100,
+    'Tasa Empleo'     = (Ocupados / Poblacion) * 100,
     'Tasa Desocupacion' = (Desocupados / PEA) * 100,
     'Tasa ocupados demandantes' = (Ocupados_demand / PEA) * 100,
     'Tasa Subocupación' = (Subocupados / PEA) * 100,
     'Tasa Subocupación demandante' = (Suboc_demandante / PEA) * 100,
     'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
-  )  %>% # Redondear las columnas de tasas a 1 decimal
+  ) %>%
+  # Redondear las tasas a 1 decimal
   mutate(across(starts_with("Tasa"), ~ round(., 1)))
 
-TasasMT_1923 <- Datos_MT_1923 %>% select(ANO4, starts_with("Tasa"))
+# Verificar el resultado
+head(Datos_MT_1923)
+
+         
+library(knitr)
+library(webshot)
+library(kableExtra)
+library(rmarkdown)
+TasasMT_1923 <- Datos_MT_1923 %>% select(ANO4, 'Tasa Actividad', 'Tasa Inactividad', 'Tasa Empleo','Tasa Desocupacion','Tasa Subocupación')
+ncol(TasasMT_1923)
+names(TasasMT_1923)
+
+# Tabla de tasas del Mercado de trabajo 2019-2023
+TablaTasasMT <- TasasMT_1923 %>%
+  kable(booktabs = TRUE,          
+        caption = "<b>Principales tasas del mercado de trabajo. Total de 31 aglomerados urbanos. 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Año", 
+                      "Tasa de actividad", 
+                      "Tasa de inactividad", 
+                      "Tasa de empleo", 
+                      "Tasa de desocupación", 
+                      "Tasa de subocupación")) %>%   
+  kable_material(c("striped", "hover")) %>%  
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"), full_width = FALSE, position = "center") %>%  
+  column_spec(1, bold = TRUE) %>% 
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC") %>% 
+  save_kable(file = "TablaTasasMT.html", self_contained = TRUE) #esto último para que no precise recursos externos al html
+webshot::webshot("TablaTasasMT.html", file = "TablaTasasMT.jpg", vwidth = 800, vheight = 600)
+
+
+#TASAS DE MERCADO DE TRABAJO DESAGREGADAS
+TASAS_MT_SEXO_1923 <- EPH2019_2023CAES %>%  
+  group_by(ANO4, SEXO) %>% 
+  summarize(
+    Poblacion          = sum(PONDERA),
+    Ocupados          = sum(PONDERA[ESTADO == 1]),
+    Desocupados       = sum(PONDERA[ESTADO == 2]),
+    PNEA               = sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PEA                = Ocupados + Desocupados,
+    Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
+    Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
+    Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
+    Subocupados       = Suboc_demandante + Suboc_no_demand,
+    'Tasa Actividad'  = (PEA / Poblacion) * 100,
+    'Tasa Inactividad' = (PNEA / Poblacion) * 100,
+    'Tasa Empleo'     = (Ocupados / Poblacion) * 100,
+    'Tasa Desocupacion' = (Desocupados / PEA) * 100,
+    'Tasa ocupados demandantes' = (Ocupados_demand / PEA) * 100,
+    'Tasa Subocupación' = (Subocupados / PEA) * 100,
+    'Tasa Subocupación demandante' = (Suboc_demandante / PEA) * 100,
+    'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
+  ) %>%
+  # Redondear las tasas a 1 decimal
+  mutate(across(starts_with("Tasa"), ~ round(., 1)))
+
+#TABLA PARA TASAS DEL MT DESAGREGADAS POR SEXO
+TasasMT_SEXO_SELECTED <- TASAS_MT_SEXO_1923 %>% select(ANO4, SEXO, 'Tasa Actividad', 'Tasa Inactividad', 'Tasa Empleo','Tasa Desocupacion','Tasa Subocupación')
+ncol(TasasMT_1923)
+names(TasasMT_1923)
+
+TablaTasasMT_SEXO <- TasasMT_SEXO_SELECTED %>%
+  kable(booktabs = TRUE,          
+        caption = "<b>Principales tasas del mercado de trabajo según sexo. Total de 31 aglomerados urbanos. 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Año", 
+                      "Sexo",
+                      "Tasa de actividad", 
+                      "Tasa de inactividad", 
+                      "Tasa de empleo", 
+                      "Tasa de desocupación", 
+                      "Tasa de subocupación")) %>%   
+  kable_material(c("striped", "hover")) %>%  
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"), full_width = FALSE, position = "center") %>%  
+  column_spec(1, bold = TRUE) %>% 
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC") %>% 
+  save_kable(file = "TablaTasasMT_SEXO.html", self_contained = TRUE) #esto último para que no precise recursos externos al html
+webshot::webshot("TablaTasasMT_SEXO.html", file = "TablaTasasMT_SEXO.jpg", vwidth = 800, vheight = 600)
+
+#TABLA PARA TASAS DEL MT DESAGREGADAS POR GRUPOS ETARIOS
+TASAS_MT_gruposetarios_1923 <- EPH2019_2023CAES %>% filter(!is.na(grupos_etarios)) %>%  
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(
+    Poblacion          = sum(PONDERA),
+    Ocupados          = sum(PONDERA[ESTADO == 1]),
+    Desocupados       = sum(PONDERA[ESTADO == 2]),
+    PNEA               = sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PEA                = Ocupados + Desocupados,
+    Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
+    Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
+    Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
+    Subocupados       = Suboc_demandante + Suboc_no_demand,
+    'Tasa Actividad'  = (PEA / Poblacion) * 100,
+    'Tasa Inactividad' = (PNEA / Poblacion) * 100,
+    'Tasa Empleo'     = (Ocupados / Poblacion) * 100,
+    'Tasa Desocupacion' = (Desocupados / PEA) * 100,
+    'Tasa ocupados demandantes' = (Ocupados_demand / PEA) * 100,
+    'Tasa Subocupación' = (Subocupados / PEA) * 100,
+    'Tasa Subocupación demandante' = (Suboc_demandante / PEA) * 100,
+    'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
+  ) %>%
+  # Redondear las tasas a 1 decimal
+  mutate(across(starts_with("Tasa"), ~ round(., 1)))
+
+#TABLA PARA TASAS DEL MT DESAGREGADAS POR GRUPOS ETARIOS
+TasasMT_GRUPOSETARIOS_SELECTED <- TASAS_MT_gruposetarios_1923 %>% select(ANO4, grupos_etarios, 'Tasa Actividad', 'Tasa Inactividad', 'Tasa Empleo','Tasa Desocupacion','Tasa Subocupación')
+ncol(TasasMT_1923)
+names(TasasMT_1923)
+
+TablaTasasMT_GRUPOSETARIOS <- TasasMT_GRUPOSETARIOS_SELECTED %>%
+  kable(booktabs = TRUE,          
+        caption = "<b>Principales tasas del mercado de trabajo según grupos etarios. Total de 31 aglomerados urbanos. 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Año", 
+                      "Grupos etarios",
+                      "Tasa de actividad", 
+                      "Tasa de inactividad", 
+                      "Tasa de empleo", 
+                      "Tasa de desocupación", 
+                      "Tasa de subocupación")) %>%   
+  kable_material(c("striped", "hover")) %>%  
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"), full_width = FALSE, position = "center") %>%  
+  column_spec(1, bold = TRUE) %>% 
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC") %>% 
+  save_kable(file = "TablaTasasMT_GRUPOSETARIOS.html", self_contained = TRUE) #esto último para que no precise recursos externos al html
+webshot::webshot("TablaTasasMT_GRUPOSETARIOS.html", file = "TablaTasasMT_GRUPOSETARIOS.jpg", vwidth = 800, vheight = 600)
+
 
 #en lo que sigue, incorporamos cruces entre variables para descripción de la población de la muestra
 
