@@ -629,6 +629,7 @@ Catocup_sexo_edad <- EPH2019_2023CAES %>%
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
+
 #Categoría ocupacional por sector de actividad, tamaño de establecimiento 
 
 
@@ -694,13 +695,15 @@ table(EPH2019_2023CAES$Preca_cond_lab)
 
 ##FORMAS DE CONTRATACIÓN
 
+unique(EPH2019_2023CAES$PP07C)
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
   mutate(
     Preca_forma_contrat = ifelse(ESTADO == 1 & CAT_OCUP == 3, 
                                  ifelse(PP07C == 1, 10, 
                                         ifelse(PP07C == 9, 0, 0)),  # PP07C == 9 asigna 0
-                                 0)  # Asigna NA a los que no cumplen la condición
+                                 0)  
   )
+table(is.na(EPH2019_2023CAES$Preca_forma_contrat))#compruebo que no hay valores NA en la variable
 
 calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_forma_contrat", weight= "PONDERA", add.percentage = "col")
 
@@ -719,18 +722,25 @@ estabilidadcuentaprop <- EPH2019_2023CAES %>%  filter(CAT_OCUP == 2 & ESTADO== 1
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
+unique(EPH2019_2023CAES$PP05H) #NA, 0, 6, 5, 2, 4, 3, 1, 9
+
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>% 
   mutate(
-    Preca_cuentaprop = ifelse(CAT_OCUP == 2, 
-                              ifelse(PP05H %in% c(1,2,3,4), 10, 
-                                     ifelse(PP05H == 9, 99, 0)), #99 son los cuenta propia que responden 
-                              0)  # 0 para los que no son CAT_OCUP == 2
+    Preca_cuentaprop = case_when(
+      ESTADO == 1 & CAT_OCUP == 2 & PP05H %in% c(1,2,3,4) ~ 10,
+      ESTADO == 1 & CAT_OCUP == 2 & PP05H %in% c(5,6) ~ 0,
+      TRUE ~ 0  # Valor por defecto para todos los demás casos
+    )
   )
+table(is.na(EPH2019_2023CAES$Preca_cuentaprop))#compruebo que no hay valores NA en la variable
+
+unique (EPH2019_2023CAES$Preca_cuentaprop)
+  
 
 
 
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "preca.cuentaprop", weight= "PONDERA", add.percentage = "col")
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_cuentaprop", weight= "PONDERA", add.percentage = "col")
 
 ##PRECARIEDAD POR INGRESOS (ACA NOS TRABAMOS)
 
@@ -782,6 +792,8 @@ eph_filtrada=eph_filtrada %>%
     levels = c("Ingresos bajos", "Ingresos medios", "Ingresos altos"))
   )
 
+table(is.na(eph_filtrada$Preca_ingresos_deciles)) 
+#FALSE  102475 me aseguro de que no haya valores na
 
 round(prop.table(table(eph_filtrada$Preca_ingresos_deciles)) * 100, 2)
 
@@ -804,12 +816,16 @@ sum(is.na(eph_filtrada %>%
 
 
 unique(eph_filtrada$PP03J)
-eph_filtrada=eph_filtrada %>%
-  mutate (Preca_ingresos_buscarotrotrabajo= as.numeric(case_when (
+eph_filtrada <- eph_filtrada %>%
+  mutate(Preca_ingresos_buscarotrotrabajo = as.numeric(case_when(
     PP03J == 1 ~ 10,
-    PP03J == 2 ~ 0) 
-  ))
+    PP03J == 2 ~ 0,
+    TRUE ~ 0  # Ahora correctamente dentro de case_when() --agrego esto para que no nos afecten el calculo los NA 26/2
+  )))
+
 table(eph_filtrada$Preca_ingresos_buscarotrotrabajo)
+sum(is.na (eph_filtrada$Preca_ingresos_buscarotrotrabajo))
+
 
 ##INTENSIDAD EN LA JORNADA LABORAL. Creo variables pluriempleo (Preca_intensidad_pluriempleo) 
 
@@ -822,6 +838,7 @@ eph_filtrada=eph_filtrada %>%
     PP03C == 2 ~ 10) 
   ))
 table(eph_filtrada$Preca_intensidad_pluriempleo)
+sum(is.na (eph_filtrada$Preca_intensidad_pluriempleo))
 
 
 #y sobreocupado (Preca_intensidad_sobreocup)
@@ -834,6 +851,9 @@ eph_filtrada=eph_filtrada %>%
     INTENSI %in% c("1", "2", "4") ~ 0) 
   ))
 table(eph_filtrada$Preca_intensidad_sobreocup)
+sum(is.na (eph_filtrada$Preca_intensidad_sobreocup))
+
+
 
 eph_filtrada <- eph_filtrada %>%
   mutate(
@@ -843,18 +863,19 @@ eph_filtrada <- eph_filtrada %>%
                                     Preca_intensidad_pluriempleo))
 
 #VARIABLE DE RESUMEN: PRECARIEDAD TOTAL ASALARIADOS
+colnames(eph_filtrada)
 
 eph_filtrada <- eph_filtrada %>%
   mutate(precariedad_total_asalariados = as.numeric(Preca_ingresos +
                                                       Preca_intensidad +
                                                       Preca_cond_lab+
-                                                      Preca_forma_contrat
+                                                      Preca_forma_contrat #ESTO NO FUNCIONA PORQUEN O ESTÁ EN ESTA BASE
   ))
 
 eph_filtrada <- eph_filtrada %>%
   mutate(precariedad_total_cuentapropistas = as.numeric(Preca_ingresos +
                                                           Preca_intensidad +
-                                                          preca.cuentaprop
+                                                          preca.cuentaprop #ESTO NO FUNCIONA PORQUEN O ESTÁ EN ESTA BASE
   ))
 unique(eph_filtrada$precariedad_total_cuentapropistas)
 table(eph_filtrada$precariedad_total_cuentapropistas)
@@ -909,6 +930,31 @@ precariedad_cuentaprop <- eph_filtrada %>%
 
 print(Precariedad_por_ano)
 # PUNTO 3: 
+
+#GRÁFICO DE PRECARIEDAD DE INGRESOS POR AÑO PARA ASALARIADOS Y CUENTAPROPISTAS (INCOMPLETO. SI AGREGAMOS ALTA MEDIA O BAJA NOS PUEDE SERVIR)
+unique (eph_filtrada$Preca_ingresos) #30 15  0 40 25 10
+precariedadxingresos_catocup2y3 <-  eph_filtrada %>% 
+  group_by(ANO4, CAT_OCUP, Preca_ingresos) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+
+
+graf_precariedadxingresos <- ggplot(eph_filtrada, aes(x = factor(ANO4), y = Preca_ingresos , fill = factor(CAT_OCUP))) + 
+  geom_bar(stat = "identity", position = "dodge") +  # Barras agrupadas por cada categoría ocupacional
+  scale_fill_brewer(palette = "Set3", name= "Categoría ocupacional") +  # Colores de las barras según CAT_OCUP
+  labs(title = "Precariedad de ingresos por año para asalariados y cuentapropistas",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Precariedad de ingresos")+
+  theme_calc() +
+  scale_y_continuous(labels = scales::number_format(big.mark = ".",decimal.mark = ",")) +  # Mostrar porcentaje en el eje y
+  guides(size = "false")  # Eliminar leyenda para tamaño
+# Mostrar gráfico
+print(graf_precariedadxingresos)
+# Guardar imagen del gráfico
+ggsave(filename = "graf_precariedadxingresos.jpg", plot = graf_precariedadxingresos, width = 8, height = 6, dpi = 300)
+
 
 
 #calculo cantidad de asalariados precarios por categoria
@@ -994,3 +1040,6 @@ tabulados <- list(
                                                  y = "Preca_intensidad", 
                                                  weights = "PONDERA", 
                                                  add.percentage = "row"))
+
+
+
