@@ -917,7 +917,7 @@ table(eph_filtrada$precariedad_total_cuentapropistas)
    # precariedad_total%in% 61:100 ~ "Precariedad alta"
  # ), levels = c("Precariedad baja", "Precariedad media", "Precariedad alta")))
 
-
+#EPH FILTRADA 2 ES LA QUE TIENE LA VARIABLE NIVELES DE PRECARIEDAD TOTAL
 eph_filtrada2 <- eph_filtrada %>% 
   mutate(Niveles_precariedad_total = case_when(
     CAT_OCUP == 2 & precariedad_total_cuentapropistas %in% 0:20   ~ "Precariedad baja",
