@@ -844,7 +844,7 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 #Imputo un ingreso a todos los valores 0,-9
 
 eph_filtrada <- EPH2019_2023CAES %>% 
-  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% #nos quedamos con asalariados y cuentapropistas
   group_by(ANO4, SEXO, grupos_etarios, region_etiqueta, caes_eph_cod) %>%
   mutate(
     P21_imputado_AC = case_when( P21<=0~ mean(P21, na.rm = TRUE), 
@@ -913,7 +913,6 @@ eph_filtrada <- eph_filtrada %>%
 table(eph_filtrada$Preca_ingresos_buscarotrotrabajo)
 sum(is.na (eph_filtrada$Preca_ingresos_buscarotrotrabajo))
 
-
 ##INTENSIDAD EN LA JORNADA LABORAL. Creo variables pluriempleo (Preca_intensidad_pluriempleo) 
 
 unique(eph_filtrada$PP03C)
@@ -925,7 +924,7 @@ eph_filtrada=eph_filtrada %>%
     PP03C == 2 ~ 10) 
   ))
 table(eph_filtrada$Preca_intensidad_pluriempleo)
-sum(is.na (eph_filtrada$Preca_intensidad_pluriempleo))
+sum(is.na (eph_filtrada$Preca_intensidad_pluriempleo)) #0
 
 
 #y sobreocupado (Preca_intensidad_sobreocup)
@@ -938,7 +937,7 @@ eph_filtrada=eph_filtrada %>%
     INTENSI %in% c("1", "2", "4") ~ 0) 
   ))
 table(eph_filtrada$Preca_intensidad_sobreocup)
-sum(is.na (eph_filtrada$Preca_intensidad_sobreocup))
+sum(is.na (eph_filtrada$Preca_intensidad_sobreocup)) #0
 
 
 
@@ -948,6 +947,30 @@ eph_filtrada <- eph_filtrada %>%
                                   Preca_ingresos_buscarotrotrabajo), 
     Preca_intensidad = as.numeric(Preca_intensidad_sobreocup +
                                     Preca_intensidad_pluriempleo))
+sum(is.na(eph_filtrada$Preca_ingresos)) #0
+sum(is.na(eph_filtrada$Preca_intensidad)) #0
+
+#Preca_cuentaprop -antigüedad en el empleo para cuentapropistas. la agrego a eph_filtrada que no estaba
+
+eph_filtrada <- eph_filtrada %>% 
+mutate(
+  Preca_cuentaprop = case_when(
+    ESTADO == 1 & CAT_OCUP == 2 & PP05H %in% c(1,2,3,4) ~ 10,
+    ESTADO == 1 & CAT_OCUP == 2 & PP05H %in% c(5,6) ~ 0,
+    TRUE ~ 0  # Valor por defecto para todos los demás casos
+  )
+)
+sum(is.na(eph_filtrada$Preca_cuentaprop)) #0
+#Preca_forma_contrat-tiempo de finalización del empleo. para asalariados
+
+eph_filtrada <- eph_filtrada  %>%
+  mutate(
+    Preca_forma_contrat = ifelse(ESTADO == 1 & CAT_OCUP == 3, 
+                                 ifelse(PP07C == 1, 10, 
+                                        ifelse(PP07C == 9, 0, 0)),  # PP07C == 9 asigna 0
+                                 0)  
+  )
+sum(is.na(eph_filtrada$Preca_forma_contrat)) #0
 
 #VARIABLE DE RESUMEN: PRECARIEDAD TOTAL ASALARIADOS
 colnames(eph_filtrada)
@@ -956,44 +979,48 @@ eph_filtrada <- eph_filtrada %>%
   mutate(precariedad_total_asalariados = as.numeric(Preca_ingresos +
                                                       Preca_intensidad +
                                                       Preca_cond_lab+
-                                                      Preca_forma_contrat #ESTO NO FUNCIONA PORQUEN O ESTÁ EN ESTA BASE
+                                                      Preca_forma_contrat 
   ))
+sum(is.na(eph_filtrada$precariedad_total_asalariados))#0
 
 eph_filtrada <- eph_filtrada %>%
   mutate(precariedad_total_cuentapropistas = as.numeric(Preca_ingresos +
                                                           Preca_intensidad +
-                                                          preca.cuentaprop #ESTO NO FUNCIONA PORQUEN O ESTÁ EN ESTA BASE
+                                                          Preca_cuentaprop  
   ))
+
+sum(is.na(eph_filtrada$precariedad_total_cuentapropistas))#0
+
 unique(eph_filtrada$precariedad_total_cuentapropistas)
 table(eph_filtrada$precariedad_total_cuentapropistas)
 
 
 #variables por tipo de precarización y una que agrupa tres categorías de precariedad: 
 
-eph_filtrada <- eph_filtrada %>% 
-  mutate (Niveles_precariedad_total = factor(case_when(
-    precariedad_total%in% 0:30  ~ "Precariedad baja",
-    precariedad_total%in% 31:60 ~ "Precariedad media",
-    precariedad_total%in% 61:100 ~ "Precariedad alta"
-  ), levels = c("Precariedad baja", "Precariedad media", "Precariedad alta")))
+#eph_filtrada <- eph_filtrada %>% 
+ # mutate (Niveles_precariedad_total = factor(case_when(
+  #  precariedad_total%in% 0:30  ~ "Precariedad baja",
+   # precariedad_total%in% 31:60 ~ "Precariedad media",
+   # precariedad_total%in% 61:100 ~ "Precariedad alta"
+ # ), levels = c("Precariedad baja", "Precariedad media", "Precariedad alta")))
 
-
+#EPH FILTRADA 2 ES LA QUE TIENE LA VARIABLE NIVELES DE PRECARIEDAD TOTAL
 eph_filtrada2 <- eph_filtrada %>% 
   mutate(Niveles_precariedad_total = case_when(
-    CAT_OCUP == 2 & precariedad_total %in% 0:20   ~ "Precariedad baja",
-    CAT_OCUP == 2 & precariedad_total %in% 21:40  ~ "Precariedad media",
-    CAT_OCUP == 2 & precariedad_total %in% 41:70 ~ "Precariedad alta",
-    CAT_OCUP == 3 & precariedad_total %in% 0:30   ~ "Precariedad baja",
-    CAT_OCUP == 3 & precariedad_total %in% 31:60  ~ "Precariedad media",
-    CAT_OCUP == 3 & precariedad_total %in% 61:100 ~ "Precariedad alta",
+    CAT_OCUP == 2 & precariedad_total_cuentapropistas %in% 0:20   ~ "Precariedad baja",
+    CAT_OCUP == 2 & precariedad_total_cuentapropistas %in% 21:40  ~ "Precariedad media",
+    CAT_OCUP == 2 & precariedad_total_cuentapropistas %in% 41:70 ~ "Precariedad alta",
+    CAT_OCUP == 3 & precariedad_total_asalariados %in% 0:30   ~ "Precariedad baja",
+    CAT_OCUP == 3 & precariedad_total_asalariados %in% 31:60  ~ "Precariedad media",
+    CAT_OCUP == 3 & precariedad_total_asalariados %in% 61:100 ~ "Precariedad alta",
     TRUE ~ NA_character_  # Para otros valores de CAT_OCUP
   ) %>% factor(levels = c("Precariedad baja", "Precariedad media", "Precariedad alta"
   )))
+sum(is.na(eph_filtrada2$Niveles_precariedad_total))#0
+table(eph_filtrada2$Niveles_precariedad_total) 
+colnames(eph_filtrada2)
 
-table(eph_filtrada$Niveles_precariedad_total) 
-
-Precariedad_por_ano <- eph_filtrada %>%
-  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+Precariedad_por_ano <- eph_filtrada2 %>% #cambié el nombre de la base 
   group_by(ANO4, Niveles_precariedad_total) %>%
   count() %>%
   rename(Cantidad = n)
@@ -1002,7 +1029,7 @@ eph_filtrada %>%
   select(SEXO, ANO4, P21, P21_imputado_AC, Decil_imputado, Preca_ingresos_deciles) -> base_chiquita
 view(base_chiquita)
 
-eph_filtrada %>% 
+eph_filtrada2 %>% 
   select(P21_imputado_AC, Preca_ingresos, Preca_cond_lab, Preca_forma_contrat, Preca_intensidad, Niveles_precariedad_total) -> base_precariedad
 view(base_precariedad)
 unique(eph_filtrada$Niveles_precariedad_total)
@@ -1018,8 +1045,25 @@ precariedad_cuentaprop <- eph_filtrada %>%
 print(Precariedad_por_ano)
 # PUNTO 3: 
 
-#GRÁFICO DE PRECARIEDAD DE INGRESOS POR AÑO PARA ASALARIADOS Y CUENTAPROPISTAS (INCOMPLETO. SI AGREGAMOS ALTA MEDIA O BAJA NOS PUEDE SERVIR)
-unique (eph_filtrada$Preca_ingresos) #30 15  0 40 25 10
+#GRÁFICO DE niveles de precariedad total por año PARA ASALARIADOS Y CUENTAPROPISTAS 
+
+graf_precariedadxcatocup <- eph_filtrada2 %>%
+  filter(!is.na(CAT_OCUP)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") + 
+  facet_wrap(~ CAT_OCUP, drop = TRUE) +  # Separar por categorías ocupacionales
+  scale_fill_brewer(palette = "Oranges")+ #es parte de las paletas secuenciales que permiten ver gradualidad
+  labs(title = "Niveles de precariedad por categoría ocupacional y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+  guides(fill = guide_legend(title = "Niveles de precariedad"))
+
+print(graf_precariedadxcatocup)
+ggsave(filename = "graf_precariedadxcatocup.jpg", plot = graf_precariedadxcatocup, width = 8, height = 6, dpi = 300)
+
+# seg
+
 precariedadxingresos_catocup2y3 <-  eph_filtrada %>% 
   group_by(ANO4, CAT_OCUP, Preca_ingresos) %>% 
   summarize(casos = sum(PONDERA)) %>% 
@@ -1027,65 +1071,33 @@ precariedadxingresos_catocup2y3 <-  eph_filtrada %>%
 
 
 
-graf_precariedadxingresos <- ggplot(eph_filtrada, aes(x = factor(ANO4), y = Preca_ingresos , fill = factor(CAT_OCUP))) + 
-  geom_bar(stat = "identity", position = "dodge") +  # Barras agrupadas por cada categoría ocupacional
-  scale_fill_brewer(palette = "Set3", name= "Categoría ocupacional") +  # Colores de las barras según CAT_OCUP
-  labs(title = "Precariedad de ingresos por año para asalariados y cuentapropistas",
+graf_nivelesprecariedadtotal <- ggplot(eph_filtrada2, aes(x = factor(ANO4), fill = Niveles_precariedad_total)) + 
+  geom_bar(position = "fill") +  # Removí stat = "identity" ya que no es necesario
+  guides(fill = guide_legend(title = "Niveles de precariedad")) +
+  scale_fill_brewer(palette = "Set3", labels = c("Alta", "Media", "Baja")) +  # Moví labels aquí
+  labs(title = "Nivel de precariedad total por año",
        subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
        x = "Año",
-       y = "Precariedad de ingresos")+
+       y = "Porcentaje") +  # Cambio "Frecuencia" por "Porcentaje"
   theme_calc() +
-  scale_y_continuous(labels = scales::number_format(big.mark = ".",decimal.mark = ",")) +  # Mostrar porcentaje en el eje y
-  guides(size = "false")  # Eliminar leyenda para tamaño
+  scale_y_continuous(labels = scales::percent_format(big.mark = ".", decimal.mark = ",")) +  # Mostrar porcentaje en el eje y
+  guides(size = "none")  # Corrige el error de "false"
+
 # Mostrar gráfico
-print(graf_precariedadxingresos)
+print(graf_nivelesprecariedadtotal)
 # Guardar imagen del gráfico
-ggsave(filename = "graf_precariedadxingresos.jpg", plot = graf_precariedadxingresos, width = 8, height = 6, dpi = 300)
+ggsave(filename = "graf_nivelesprecariedadtotal.jpg", plot = graf_nivelesprecariedadtotal, width = 8, height = 6, dpi = 300)
+#otro formato-creo que mejor
+graf2_nivelesprecariedadtotal <- ggplot(eph_filtrada2, aes(x = factor(ANO4), fill = Niveles_precariedad_total)) + 
+  geom_bar(position = "dodge") +  # "dodge" agrupa las barras una al lado de la otra
+  scale_fill_brewer(palette = "Paired") +
+  labs(title = "Niveles de precariedad por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año", y = "Frecuencia",
+       fill = "Nivel de precariedad") +
+  theme_calc()
+ggsave(filename = "graf2_nivelesprecariedadtotal.jpg", plot = graf2_nivelesprecariedadtotal, width = 8, height = 6, dpi = 300)
 
-
-
-#calculo cantidad de asalariados precarios por categoria
-
-
-asalariados_precarios <- eph_filtrada %>% 
-  group_by(ANO4) %>% 
-  filter(ESTADO == 1, CAT_OCUP == 3) %>% 
-  summarise(
-    Preca_ingresos = sum(PONDERA[Preca_ingresos_deciles_N ==30], na.rm = TRUE) + 
-      sum(PONDERA[Preca_ingresos_buscarotrotrabajo > 0], na.rm = TRUE),
-    Preca_intensidad = sum(PONDERA[Preca_intensidad_pluriempleo > 0], na.rm = TRUE) + 
-      sum(PONDERA[Preca_intensidad_sobreocup > 0], na.rm = TRUE), 
-    Preca_cond_lab = sum(PONDERA[Preca_cond_lab > 0], na.rm = TRUE), 
-    Preca_forma_contrat = sum (PONDERA [Preca_forma_contrat> 0], na.rm = TRUE),
-    Asalariados = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 3], na.rm = TRUE)
-  )
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_ingresos = (Preca_ingresos / Asalariados)*100)
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_intensidad = (Preca_intensidad / Asalariados)*100)
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_con_lab = (Preca_cond_lab / Asalariados)*100)
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_contrat = (Preca_forma_contrat / Asalariados)*100)
-
-cuentapropistas_precarios <- eph_filtrada %>% 
-  group_by(ANO4) %>% 
-  filter(ESTADO == 1, CAT_OCUP == 2) %>% 
-  summarise(
-    Preca_ingresos = sum(PONDERA[Preca_ingresos_deciles_N ==30], na.rm = TRUE) + 
-      sum(PONDERA[Preca_ingresos_buscarotrotrabajo > 0], na.rm = TRUE),
-    Preca_intensidad = sum(PONDERA[Preca_intensidad_pluriempleo > 0], na.rm = TRUE) + 
-      sum(PONDERA[Preca_intensidad_sobreocup > 0], na.rm = TRUE), 
-    preca.cuentaprop = sum(PONDERA[preca.cuentaprop==10], na.rm = TRUE),
-    Cuentapropistas = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 2], na.rm = TRUE)
-  )
-
-cuentapropistas_precarios <- cuentapropistas_precarios %>%
-  mutate(Proporcion_precariedad_ingresos = (Preca_ingresos / Cuentapropistas)*100)
-cuentapropistas_precarios <- cuentapropistas_precarios %>%
-  mutate(Proporcion_precariedad_intensidad = (Preca_intensidad / Cuentapropistas)*100)
-cuentapropistas_precarios <- cuentapropistas_precarios %>%
-  mutate(Proporcion_precariedad_cuentapropista = (preca.cuentaprop / Cuentapropistas)*100)
 
 
 
@@ -1093,40 +1105,89 @@ cuentapropistas_precarios <- cuentapropistas_precarios %>%
 colnames(eph_filtrada)
 
 tabulados <- list(
-  g_etarios_x_precariedad = calculate_tabulates(eph_filtrada, 
+  g_etarios_x_precariedad = calculate_tabulates(eph_filtrada2, 
                                                 x = "grupos_etarios", 
                                                 y = "Niveles_precariedad_total", 
                                                 weights = "PONDERA", 
-                                                add.percentage = "row"),
-  
-  ambito_x_precariedad = calculate_tabulates(eph_filtrada, 
+                                                add.percentage = "row")
+ 
+  ambito_x_precariedad = calculate_tabulates(eph_filtrada2, 
                                              x = "ambito_establecimiento", 
                                              y = "Niveles_precariedad_total", 
                                              weights = "PONDERA", 
                                              add.percentage = "row"),
   
-  sexo_x_precariedad = calculate_tabulates(eph_filtrada, 
+  sexo_x_precariedad = calculate_tabulates(eph_filtrada2, 
                                            x = "SEXO", 
                                            y = "Niveles_precariedad_total", 
                                            weights = "PONDERA", 
                                            add.percentage = "row"),
   
-  lugarnacimiento_x_precariedad = calculate_tabulates(eph_filtrada, 
+  lugarnacimiento_x_precariedad = calculate_tabulates(eph_filtrada2, 
                                                       x = "lugar_nacimiento", 
                                                       y = "Niveles_precariedad_total", 
                                                       weights = "PONDERA", 
                                                       add.percentage = "row"),
   
-  ambito_x_precaingresos = calculate_tabulates(eph_filtrada, 
+  ambito_x_precaingresos = calculate_tabulates(eph_filtrada2, 
                                                x = "ambito_establecimiento", 
                                                y = "Preca_ingresos", 
                                                weights = "PONDERA", 
                                                add.percentage = "row"), 
-  ambito_x_precaintensidad = calculate_tabulates(eph_filtrada, 
+  ambito_x_precaintensidad = calculate_tabulates(eph_filtrada2, 
                                                  x = "ambito_establecimiento", 
                                                  y = "Preca_intensidad", 
                                                  weights = "PONDERA", 
                                                  add.percentage = "row"))
 
 
+#GRÁFICOS PARA VER PRECARIEDAD SEGÚN NUESTRAS VARS DE INTERES:grupos etarios, sexo, lugar de nacimiento
 
+#grupos etarios
+sum (is.na)
+graf_precariedadxgruposetarios <- eph_filtrada2 %>%
+  filter(!is.na(grupos_etarios)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") +  # Cambia a "fill" para ver proporciones
+  facet_wrap(~ grupos_etarios, drop = TRUE) +  # Separar por grupos etarios 
+  scale_fill_brewer(palette = "Paired")+
+  labs(title = "Niveles de precariedad por grupo etario y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+guides(fill = guide_legend(title = "Niveles de Precariedad"))
+
+print(graf_precariedadxgruposetarios)
+ggsave(filename = "graf_precariedadxgruposetarios.jpg", plot = graf_precariedadxgruposetarios, width = 8, height = 6, dpi = 300)
+# sexo
+
+graf_precariedadxsexo <- eph_filtrada2 %>%
+  filter(!is.na(grupos_etarios)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") +  
+  facet_wrap(~ SEXO, drop = TRUE) +  # Separar por sexo
+  scale_fill_brewer(palette = "BuGn")+
+  labs(title = "Niveles de precariedad por sexo y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+  guides(fill = guide_legend(title = "Niveles de Precariedad"))
+
+print(graf_precariedadxgruposetarios)
+ggsave(filename = "graf_precariedadxsexo.jpg", plot = graf_precariedadxsexo, width = 8, height = 6, dpi = 300)
+
+#lugar de nacimiento: no queda un gráfico muy bueno
+graf_precariedadxlugarnac <- eph_filtrada2 %>%
+  filter(!is.na(lugar_nacimiento)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") +  
+  facet_wrap(~ lugar_nacimiento, drop = TRUE) +  # Separar por sexo
+  scale_fill_brewer(palette = "Blues")+
+  labs(title = "Niveles de precariedad por lugar de nacimiento y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+  guides(fill = guide_legend(title = "Niveles de Precariedad"))
+display.brewer.all()
+print(graf_precariedadxlugarnac)
+ggsave(filename = "graf_precariedadxlugarnac.jpg", plot = graf_precariedadxlugarnac, width = 8, height = 6, dpi = 300)
