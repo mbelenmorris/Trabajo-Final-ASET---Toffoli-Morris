@@ -3,9 +3,16 @@ library(tidyverse)
 library(dplyr)
 library(janitor)
 library(srvyr)
-library(haven)
 library(kableExtra)
-
+webshot::install_phantomjs()
+library(ggplot2)
+library(scales)
+library(ggthemes)
+library(RColorBrewer)
+library(knitr)
+install.packages("webshot")
+library(webshot)
+library(rmarkdown)
 
 
 Variables=c("CODUSU","ANO4", "TRIMESTRE", "REGION", "AGLOMERADO", "PONDERA", "CH04","CH06","ESTADO", "CAT_OCUP", "CAT_INAC",
@@ -21,7 +28,7 @@ TABLAP21 <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", "PONDERA")#lo h
 #Variables nuevas y recodificadas (SEXO, PP04B_COD (CAES), PP04C(CANTIDAD EMPLEADOS), Grupos etarios, ámbito del establecimiento, región, lugar de nacimiento, nivel_educativo_completo)
 
 #SEXO
-EPH2019_2023CAES=EPH2019_2023CAES %>% mutate(CH04=case_when(
+EPH2019_2023CAES=EPH2019_2023CAES %>% mutate(SEXO=case_when(
   CH04==1 ~ "Varón",
   CH04==2 ~ "Mujer",
   TRUE~ "Otro"))
@@ -332,6 +339,79 @@ print(graf_categ_ocupacional)
 ggsave(filename = "graf_categ_ocupacional.jpg", plot = graf_categ_ocupacional, width = 8, height = 6, dpi = 300)
 
 
+#Ambito establecimiento, nivel educativo
+
+
+ambitoestablecimiento_año_pond <- eph_filtrada %>% 
+  filter(!is.na(ambito_establecimiento)) %>% 
+  group_by(ANO4, ambito_establecimiento) %>% 
+  summarize(casos = sum(PONDERA))
+
+ambitoestablecimiento_año_pond <- ambitoestablecimiento_año_pond %>%
+  mutate(
+    ANO4 = as_factor(ANO4),  # Convertir año a factor
+    casos = as.numeric(casos),  # Asegurar que casos sea numérico
+    ambito_establecimiento = as_factor(ambito_establecimiento)  # Convertir la variable lugar_nacimiento a factor
+  ) %>%
+  group_by(ANO4) %>%
+  mutate(porcentaje = casos / sum(casos)) %>%  # Calcular proporciones dentro de cada año
+  ungroup()
+
+graf_ambitoestablecimiento <- ggplot(ambitoestablecimiento_año_pond, aes(x = ANO4, y = porcentaje, fill = ambito_establecimiento)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "PuRd") +  # Paleta de colores
+  labs(title = "Ambito del establecimiento de trabajo por año (Total ocupados)",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Mostrar en porcentaje
+  guides(size = "none")
+print(graf_ambitoestablecimiento)
+
+#pruebo si es total ocupados o si es solo para ocupados asalariados (es para total de ocupados)
+
+calculate_tabulates(
+  base = EPH2019_2023CAES,
+  x = "ambito_establecimiento", y = "CAT_OCUP",
+  weights = "PONDERA"
+)
+
+ggsave(filename = "graf_ambitoestablecimiento.jpg", plot = graf_ambitoestablecimiento, width = 8, height = 6, dpi = 300)
+
+
+#nivel educativo
+
+niveleducativo_año_pond <- EPH2019_2023CAES %>% 
+  filter(!is.na(nivel_educativo_completo)) %>% 
+  group_by(ANO4, nivel_educativo_completo) %>% 
+  summarize(casos = sum(PONDERA))
+
+niveleducativo_año_pond <- niveleducativo_año_pond %>%
+  mutate(
+    ANO4 = as_factor(ANO4),  # Convertir año a factor
+    casos = as.numeric(casos),  # Asegurar que casos sea numérico
+    nivel_educativo_completo = as_factor(nivel_educativo_completo)  # Convertir la variable lugar_nacimiento a factor
+  ) %>%
+  group_by(ANO4) %>%
+  mutate(porcentaje = casos / sum(casos)) %>%  # Calcular proporciones dentro de cada año
+  ungroup()
+
+graf_niveleducativo <- ggplot(niveleducativo_año_pond, aes(x = ANO4, y =porcentaje, fill = nivel_educativo_completo)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "PuBu") +  # Paleta de colores
+  labs(title = "Nivel educativo completo por año (Total ocupados)",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Nivel educativo") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Mostrar en porcentaje
+  guides(size = "none")
+print(graf_niveleducativo)
+
+ggsave(filename = "graf_niveleducativo.jpg", plot = graf_niveleducativo, width = 8, height = 6, dpi = 300)
+
+
 
 #categoría de inactividad
 unique(EPH2019_2023CAES$CAT_INAC)
@@ -374,6 +454,7 @@ head(Datos_MT_1923)
 
          
 library(knitr)
+install.packages("webshot")
 library(webshot)
 library(kableExtra)
 library(rmarkdown)
@@ -382,6 +463,9 @@ ncol(TasasMT_1923)
 names(TasasMT_1923)
 
 # Tabla de tasas del Mercado de trabajo 2019-2023
+ncol(TasasMT_1923)
+colnames(TasasMT_1923)
+
 TablaTasasMT <- TasasMT_1923 %>%
   kable(booktabs = TRUE,          
         caption = "<b>Principales tasas del mercado de trabajo. Total de 31 aglomerados urbanos. 3T-2019-2023</b>", 
@@ -391,7 +475,10 @@ TablaTasasMT <- TasasMT_1923 %>%
                       "Tasa de inactividad", 
                       "Tasa de empleo", 
                       "Tasa de desocupación", 
-                      "Tasa de subocupación")) %>%   
+                      "Tasa de ocupados demandantes",
+                      "Tasa de subocupación", 
+                      "Tasa de subocupación demandante", 
+                      "Tasa de subocupación no demandante")) %>%   
   kable_material(c("striped", "hover")) %>%  
   kable_styling(bootstrap_options = c("striped", "bordered", "hover"), full_width = FALSE, position = "center") %>%  
   column_spec(1, bold = TRUE) %>% 
