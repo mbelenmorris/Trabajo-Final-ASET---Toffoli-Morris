@@ -933,8 +933,7 @@ sum(is.na(eph_filtrada2$Niveles_precariedad_total))#0
 table(eph_filtrada2$Niveles_precariedad_total) 
 colnames(eph_filtrada2)
 
-Precariedad_por_ano <- eph_filtrada %>%
-  filter(ESTADO == 1 & CAT_OCUP %in% c(2, 3)) %>% 
+Precariedad_por_ano <- eph_filtrada2 %>% #cambié el nombre de la base 
   group_by(ANO4, Niveles_precariedad_total) %>%
   count() %>%
   rename(Cantidad = n)
@@ -943,7 +942,7 @@ eph_filtrada %>%
   select(SEXO, ANO4, P21, P21_imputado_AC, Decil_imputado, Preca_ingresos_deciles) -> base_chiquita
 view(base_chiquita)
 
-eph_filtrada %>% 
+eph_filtrada2 %>% 
   select(P21_imputado_AC, Preca_ingresos, Preca_cond_lab, Preca_forma_contrat, Preca_intensidad, Niveles_precariedad_total) -> base_precariedad
 view(base_precariedad)
 unique(eph_filtrada$Niveles_precariedad_total)
@@ -961,6 +960,22 @@ print(Precariedad_por_ano)
 
 #GRÁFICO DE niveles de precariedad total por año PARA ASALARIADOS Y CUENTAPROPISTAS 
 
+graf_precariedadxcatocup <- eph_filtrada2 %>%
+  filter(!is.na(CAT_OCUP)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") + 
+  facet_wrap(~ CAT_OCUP, drop = TRUE) +  # Separar por categorías ocupacionales
+  scale_fill_brewer(palette = "Oranges")+ #es parte de las paletas secuenciales que permiten ver gradualidad
+  labs(title = "Niveles de precariedad por categoría ocupacional y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+  guides(fill = guide_legend(title = "Niveles de precariedad"))
+
+print(graf_precariedadxcatocup)
+ggsave(filename = "graf_precariedadxcatocup.jpg", plot = graf_precariedadxcatocup, width = 8, height = 6, dpi = 300)
+
+# seg
 
 precariedadxingresos_catocup2y3 <-  eph_filtrada %>% 
   group_by(ANO4, CAT_OCUP, Preca_ingresos) %>% 
@@ -1039,7 +1054,7 @@ tabulados <- list(
                                                  add.percentage = "row"))
 
 
-#GRÁFICOS PARA VER PRECARIEDAD SEGÚN NUESTRAS VARS DE INTERES:grupos etarios, sexo, lugar de nacimiento, ámbito
+#GRÁFICOS PARA VER PRECARIEDAD SEGÚN NUESTRAS VARS DE INTERES:grupos etarios, sexo, lugar de nacimiento
 
 #grupos etarios
 sum (is.na)
@@ -1057,4 +1072,35 @@ guides(fill = guide_legend(title = "Niveles de Precariedad"))
 
 print(graf_precariedadxgruposetarios)
 ggsave(filename = "graf_precariedadxgruposetarios.jpg", plot = graf_precariedadxgruposetarios, width = 8, height = 6, dpi = 300)
-# seguir con sexo, lugar de nacimiento, ámbito
+# sexo
+
+graf_precariedadxsexo <- eph_filtrada2 %>%
+  filter(!is.na(grupos_etarios)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") +  
+  facet_wrap(~ SEXO, drop = TRUE) +  # Separar por sexo
+  scale_fill_brewer(palette = "BuGn")+
+  labs(title = "Niveles de precariedad por sexo y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+  guides(fill = guide_legend(title = "Niveles de Precariedad"))
+
+print(graf_precariedadxgruposetarios)
+ggsave(filename = "graf_precariedadxsexo.jpg", plot = graf_precariedadxsexo, width = 8, height = 6, dpi = 300)
+
+#lugar de nacimiento: no queda un gráfico muy bueno
+graf_precariedadxlugarnac <- eph_filtrada2 %>%
+  filter(!is.na(lugar_nacimiento)) %>% ggplot( aes(x = factor(ANO4), fill = Niveles_precariedad_total)) +
+  geom_bar(position = "dodge") +  
+  facet_wrap(~ lugar_nacimiento, drop = TRUE) +  # Separar por sexo
+  scale_fill_brewer(palette = "Blues")+
+  labs(title = "Niveles de precariedad por lugar de nacimiento y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Frecuencia") +
+  theme_calc()+
+  guides(fill = guide_legend(title = "Niveles de Precariedad"))
+display.brewer.all()
+print(graf_precariedadxlugarnac)
+ggsave(filename = "graf_precariedadxlugarnac.jpg", plot = graf_precariedadxlugarnac, width = 8, height = 6, dpi = 300)

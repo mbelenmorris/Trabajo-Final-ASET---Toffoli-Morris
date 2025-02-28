@@ -1,0 +1,1 @@
+display.brewer.all() #ver en plots y cliquear en zoom 
