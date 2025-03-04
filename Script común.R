@@ -4,6 +4,12 @@ library(dplyr)
 library(janitor)
 library(srvyr)
 library(haven)
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(ggthemes)
+library(haven)  # Para manejar labelled
+library(RColorBrewer)
 
 
 
@@ -12,7 +18,7 @@ Variables=c("CODUSU","ANO4", "TRIMESTRE", "REGION", "AGLOMERADO", "PONDERA", "CH
             "PP04A", "PP04B_COD", "CH15", "NIVEL_ED", "PP04C", "PP03C", "PP03G", "PP03I", "PP03J", "P21", "INTENSI",  "PP07C", "PP07E", "PP07G1", "PP07G2", "PP07G3", "PP07G4", "PP07H", "PP07I", "DECOCUR", "PONDIIO", "PP05H")
 EPH2019_2023CAES=get_microdata(year=2019:2023, period = 1,type = "individual", vars = Variables)
 
-saveRDS(EPH2019_2023CAES, file = "EPH2019_2023CAES.rds")
+
 EPH2019_2023CAES <- EPH2019_2023CAES %>% eph::organize_labels()
 EPH2019_2023CAES=organize_caes(EPH2019_2023CAES)
 
@@ -21,13 +27,10 @@ TABLAP21 <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", "PONDERA")#lo h
 #Variables nuevas y recodificadas (SEXO, PP04B_COD (CAES), PP04C(CANTIDAD EMPLEADOS), Grupos etarios, ámbito del establecimiento, región, lugar de nacimiento, nivel_educativo_completo)
 
 #SEXO
-EPH2019_2023CAES=EPH2019_2023CAES %>% mutate(CH04=case_when(
-  CH04==1 ~ "Varón",
-  CH04==2 ~ "Mujer",
-  TRUE~ "Otro"))
 
-EPH2019_2023CAES=EPH2019_2023CAES %>% rename(SEXO=CH04)
-EPH2019_2023CAES=EPH2019_2023CAES %>% rename(CANT.EMPLEADOS=PP04C)
+EPH2019_2023CAES=EPH2019_2023CAES %>% mutate(SEXO=case_when(
+  CH04==1 ~ "Varón",
+  CH04==2 ~ "Mujer"))
 
 # REGION
 
@@ -44,13 +47,9 @@ colnames(EPH2019_2023CAES)
 
 #CANTIDAD DE EMPLEADOS
 
+
+EPH2019_2023CAES=EPH2019_2023CAES %>% rename(CANT.EMPLEADOS=PP04C)
 summary(EPH2019_2023CAES$CANT.EMPLEADOS)
-calculate_tabulates(EPH2019_2023CAES, "CANT.EMPLEADOS")
-
-unique(EPH2019_2023CAES$CANT.EMPLEADOS)
-class(EPH2019_2023CAES$CANT.EMPLEADOS)
-table(as_factor(EPH2019_2023CAES$CANT.EMPLEADOS), useNA = "always")
-
 
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
   mutate(CANT.EMPLEADOS = as_factor(CANT.EMPLEADOS)) %>%  # Convertir a factor para trabajar con etiquetas
@@ -89,12 +88,6 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 table(EPH2019_2023CAES$CANT.EMPLEADOS, useNA = "always")
 
 
-class(EPH2019_2023CAES$CANT.EMPLEADOS)# "ordered" "factor" 
-
-summary(EPH2019_2023CAES$CANT.EMPLEADOS) #no me aparecían registros para más del valor 5 porque no estaba incluida una categoría para el valor 0. 
-
-table(EPH2019_2023CAES$CANT.EMPLEADOS)
-
 
 #GRUPOS ETARIOS, AMBITO_ESTABLECIMIENTO, LUGAR_NACIMIENTO, NIVEL_EDUCATIVO,
 
@@ -130,13 +123,28 @@ table(EPH2019_2023CAES$ambito_establecimiento)
 table(EPH2019_2023CAES$lugar_nacimiento)
 table(EPH2019_2023CAES$nivel_educativo_completo)
 
-#-Descripción de la población de la muestra 
+saveRDS(EPH2019_2023CAES, file = "EPH2019_2023CAES.rds")
 
-#SEXO Y AÑO
+##Caracterización de la muestra y población: sexo, estado, categoría ocupacional, categoría inactividad
+
+##SEXO Y AÑO
 poblacion_x_año<- EPH2019_2023CAES %>% group_by (ANO4) %>% summarize(sum(PONDERA))
 sexo_año<- EPH2019_2023CAES %>% group_by (SEXO,ANO4) %>% summarize(sum(PONDERA))
 
-#grupos etarios
+graf_sexoyaño <- ggplot(EPH2019_2023CAES, aes(x = ANO4, y = PONDERA, fill = SEXO)) + 
+  geom_bar(stat = "identity", position = "fill") + 
+  scale_fill_brewer(palette="Set3")+
+  labs(title = "Sexo de la población por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  guides(size = "none")
+print(graf_sexoyaño)
+
+
+#grupos etarios y año
 
 unique(EPH2019_2023CAES$grupos_etarios)
 gruposetarios_año_pond <- EPH2019_2023CAES %>% filter (!is.na(grupos_etarios)) %>% 
@@ -144,8 +152,46 @@ gruposetarios_año_pond <- EPH2019_2023CAES %>% filter (!is.na(grupos_etarios)) 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
+# Convertir variables labelled a formatos adecuados
+gruposetarios_año_pond <- gruposetarios_año_pond %>%
+  mutate(
+    ANO4 = as_factor(ANO4),  # Convertir año a factor
+    casos = as.numeric(casos),  # Asegurar que casos sea numérico
+    grupos_etarios = as_factor(grupos_etarios)  # Convertir la variable de grupos etarios a factor
+  ) %>%
+  group_by(ANO4) %>%
+  mutate(porcentaje = casos / sum(casos)) %>%  # Calcular proporciones dentro de cada año
+  ungroup()
 
-#distribución y porcentajes por sexo, estado, categoría ocupacional, categoría inactividad
+# Crear gráfico de barras apiladas. no logro generar con etiquetas de porcentaje, revisar
+graf_gruposetarios <- ggplot(gruposetarios_año_pond, aes(x = ANO4, y = porcentaje, fill = grupos_etarios)) + 
+  geom_bar(stat = "identity", ) +  
+  scale_fill_brewer(palette = "Set3") +  # Paleta de colores
+  labs(title = "Distribución de grupos etarios por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  
+  guides(size = "none")+
+  geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+            position = position_stack(vjust = 0.5),  # Centrar las etiquetas dentro de las pilas
+            color = "black", fontface = "bold", size = 3)
+print(graf_gruposetarios)
+
+#Lugar de nacimiento 
+
+Muestra_lugarnacimiento=EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
+  group_by(ANO4) %>% 
+  tabyl(lugar_nacimiento) %>%
+  adorn_totals() %>% 
+  adorn_pct_formatting()
+
+lugarnacimiento_año_pond <- EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
+  group_by(ANO4, lugar_nacimiento) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 
 #sexo
 sexo_año_pond <- EPH2019_2023CAES %>% 
@@ -180,6 +226,68 @@ lugarnacimiento_año_pond <- EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento
   group_by(ANO4, lugar_nacimiento) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+# Convertir variables adecuadas y calcular proporciones dentro de cada año
+lugarnacimiento_año_pond <- lugarnacimiento_año_pond %>%
+  mutate(
+    ANO4 = as_factor(ANO4),  # Convertir año a factor
+    casos = as.numeric(casos),  # Asegurar que casos sea numérico
+    lugar_nacimiento = as_factor(lugar_nacimiento)  # Convertir la variable lugar_nacimiento a factor
+  ) %>%
+  group_by(ANO4) %>%
+  mutate(porcentaje = casos / sum(casos)) %>%  # Calcular proporciones dentro de cada año
+  ungroup()
+
+# Crear gráfico de barras apiladas
+graf_lugar_nacimiento <- ggplot(lugarnacimiento_año_pond, aes(x = ANO4, y = porcentaje, fill = lugar_nacimiento)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Greens") +  # Paleta de colores
+  labs(title = "Lugar de nacimiento por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Mostrar en porcentaje
+  guides(size = "none")
+print(graf_lugar_nacimiento)
+
+# Guardar imagen del gráfico
+ggsave(filename = "graf_lugar_nacimiento.jpg", plot = graf_lugar_nacimiento, width = 8, height = 6, dpi = 300)
+
+#nivel educativo 
+
+nivel_educativo_año_pond <- EPH2019_2023CAES %>% filter(!is.na(nivel_educativo_completo)) %>% 
+  group_by(ANO4, nivel_educativo_completo) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+# Convertir variables adecuadas y calcular proporciones dentro de cada año
+nivel_educativo_año_pond <- nivel_educativo_año_pond %>%
+  mutate(
+    ANO4 = as_factor(ANO4),  # Convertir año a factor
+    casos = as.numeric(casos),  # Asegurar que casos sea numérico
+    nivel_educativo_completo = as_factor(nivel_educativo_completo)  # Convertir la variable lugar_nacimiento a factor
+  ) %>%
+  group_by(ANO4) %>%
+  mutate(porcentaje = casos / sum(casos)) %>%  # Calcular proporciones dentro de cada año
+  ungroup()
+
+# Crear gráfico de barras apiladas
+graf_nivel_educativo <- ggplot(nivel_educativo_año_pond, aes(x = ANO4, y = porcentaje, fill = nivel_educativo_completo)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Set3") +  # Paleta de colores
+  labs(title = "Nivel educativo completo por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Mostrar en porcentaje
+  guides(size = "none")+
+  geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+print(graf_nivel_educativo)
+
 
 #cant.empleados/tamaño del establecimiento  
 cant_empleados_pond <- EPH2019_2023CAES %>% filter(!is.na(CANT.EMPLEADOS) & CANT.EMPLEADOS !=0)%>%

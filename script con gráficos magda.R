@@ -177,6 +177,7 @@ graf_sexoyaño <- ggplot(EPH2019_2023CAES, aes(x = ANO4, y = PONDERA, fill = SEX
   theme_calc() +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   guides(size = "none")
+print(graf_sexoyaño)
 
 # Guardar imagen asegurando tamaño adecuado
 ggsave(filename = "graf_sexoyaño.jpg", plot = graf_sexoyaño, width = 8, height = 6, dpi = 300)
