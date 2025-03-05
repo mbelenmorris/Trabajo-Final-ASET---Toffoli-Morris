@@ -179,6 +179,19 @@ graf_sexoyaño <- ggplot(EPH2019_2023CAES, aes(x = ANO4, y = PONDERA, fill = SEX
   guides(size = "none")
 print(graf_sexoyaño)
 
+graf_sexoyaño_alternativo <- ggplot(EPH2019_2023CAES, aes(x = ANO4, y = PONDERA, fill = SEXO)) + 
+  geom_bar(stat = "identity", position = "stack") + #cambié para probar cómo queda sin homogeneizar todas las barras a 100%
+  scale_fill_brewer(palette="Set1")+
+  labs(title = "Sexo de la población por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::comma_format()) + 
+  guides(size = "none")
+print(graf_sexoyaño_alternativo)
+
+
 # Guardar imagen asegurando tamaño adecuado
 ggsave(filename = "graf_sexoyaño.jpg", plot = graf_sexoyaño, width = 8, height = 6, dpi = 300)
 
@@ -1110,7 +1123,7 @@ tabulados <- list(
                                                 x = "grupos_etarios", 
                                                 y = "Niveles_precariedad_total", 
                                                 weights = "PONDERA", 
-                                                add.percentage = "row")
+                                                add.percentage = "row"),
  
   ambito_x_precariedad = calculate_tabulates(eph_filtrada2, 
                                              x = "ambito_establecimiento", 
@@ -1192,3 +1205,59 @@ graf_precariedadxlugarnac <- eph_filtrada2 %>%
 display.brewer.all()
 print(graf_precariedadxlugarnac)
 ggsave(filename = "graf_precariedadxlugarnac.jpg", plot = graf_precariedadxlugarnac, width = 8, height = 6, dpi = 300)
+
+#GRAFICOS INTERACTIVOS
+
+library(ggplot2)
+library(plotly)
+library(htmlwidgets)
+
+# gráfico de precariedad total
+colnames (eph_filtrada2)
+unique (eph_filtrada2$Niveles_precariedad_total)
+
+TasasPrecariedad_1923 <- eph_filtrada2 %>%  #calculo tasas para que me aparezcan mejor los valores de porcentajes en el grafico posterior
+  group_by(ANO4) %>% 
+  summarize(
+    Poblacion = sum(PONDERA),
+    Ocupados = sum(PONDERA[ESTADO == 1]),
+    Precarios_bajos = sum(PONDERA[Niveles_precariedad_total == "Precariedad baja"]),
+    Precarios_medios = sum(PONDERA[Niveles_precariedad_total == "Precariedad media"]),
+    Precarios_altos = sum(PONDERA[Niveles_precariedad_total == "Precariedad alta"]),
+    'Tasa de precariedad baja' = (Precarios_bajos / Ocupados) * 100,
+    'Tasa de precariedad media' = (Precarios_medios / Ocupados) * 100,
+    'Tasa de precariedad alta' = (Precarios_altos / Ocupados) * 100
+  ) %>%  # El pipe debe ir después de summarize
+  mutate(across(starts_with("Tasa"), ~ round(., 1)))  # Redondear las tasas a 1 decimal
+
+TasasPrecariedad_1923_long <- TasasPrecariedad_1923 %>%
+  pivot_longer(cols = starts_with("Tasa"), #La función pivot_longer() convierte las columnas de las tasas de precariedad (Tasa de precariedad baja, Tasa de precariedad media, etc.) en una única columna llamada Tasa_tipo, con los valores correspondientes en la columna Valor_tasa.
+               names_to = "Tasa_tipo", 
+               values_to = "Valor_tasa")
+# Crear gráfico con ggplot
+grafico_Tasasprecariedad <- ggplot(TasasPrecariedad_1923_long, aes(x = factor(ANO4), y = Valor_tasa, fill = Tasa_tipo)) + 
+  geom_bar(stat = "identity", position = "dodge") +  
+  labs(title = "Tasas de Precariedad por Año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Tasa (%)",
+       fill = "Tipo de tasa") + 
+  scale_fill_brewer(palette = "Reds")+
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1, big.mark = ".", decimal.mark = ","))+
+  aes(text = paste("Año: ", ANO4, #incluí esta línea para que aparezca el nombre de la variable en la etiqueta (x ej Año en lugar de ANO4), pero no hay caso  
+                   "<br>Tasa: ", round(Valor_tasa, 1), "%", 
+                   "<br>Tipo de tasa: ", Tasa_tipo)) 
+
+# Convertir a gráfico interactivo y personalizar las etiquetas emergentes
+grafinteractivo_precatotal <- ggplotly(grafico_Tasasprecariedad, 
+                                       tooltip = c("x", "y", "fill"))  # Especifica las variables
+
+# Mostrar el gráfico interactivo
+grafinteractivo_precatotal
+
+# Guardar el gráfico estático como PNG
+ggsave("grafico_precariedad.png", plot = grafinteractivo_precatotal, width = 8, height = 6, dpi = 300)
+
+# Guardar el gráfico interactivo como HTML
+saveWidget(graf_interactivo, "grafico_precariedad.html", selfcontained = TRUE)
