@@ -308,9 +308,10 @@ cond_actividad_pond <- EPH2019_2023CAES %>%
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
 #categoría ocupacional:notar que hay un valor 0 que no figura en el diseño. segun el anexo: El código 0 identifica los casos a los cuales no les corresponde la secuencia analizada. ACÁ SERÍAN LOS INACTIVOS Y MENORES DE 10
-categ_ocupacional_pond <- EPH2019_2023CAES %>% 
+categ_ocupacional_pond = EPH2019_2023CAES %>% 
+  filter(ESTADO == 1) %>% 
   group_by(ANO4, CAT_OCUP) %>% 
-  summarize(casos = sum(PONDERA)) %>% 
+  summarize(casos = sum(PONDERA, na.rm = TRUE)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
 #categoría de inactividad
@@ -321,6 +322,7 @@ cat_inactividad_pond <- EPH2019_2023CAES %>%  filter(!is.na(CAT_INAC)& CAT_INAC!
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
 #Tasas básicas del MT. Notar que utiliza la PP03j, que es la pregunta por la búsqueda de otro empleo además del que ya se tiene. 
+
 
 Datos_MT_1923<- EPH2019_2023CAES %>%  
   group_by(ANO4) %>% 

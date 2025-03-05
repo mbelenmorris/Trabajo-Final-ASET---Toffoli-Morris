@@ -343,7 +343,7 @@ ggsave(filename = "graf_categ_ocupacional.jpg", plot = graf_categ_ocupacional, w
 #Ambito establecimiento, nivel educativo
 
 
-ambitoestablecimiento_año_pond <- eph_filtrada %>% 
+ambitoestablecimiento_año_pond <- EPH2019_2023CAES %>% 
   filter(!is.na(ambito_establecimiento)) %>% 
   group_by(ANO4, ambito_establecimiento) %>% 
   summarize(casos = sum(PONDERA))
