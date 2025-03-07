@@ -1,0 +1,93 @@
+---
+title: "Aproximaciones al fenómeno de la precariedad laboral a partir de la EPH individual (3T-2019-2023)"
+author: María Belén Morris y María Magdalena Tóffoli
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(rmarkdown)
+library(dplyr)
+library(plotly)
+library(flexdashboard)
+library(shiny)
+
+```
+
+Row {data-height=650}
+
+------------------------------------------------------------------------
+
+### Chart 1
+
+```{r}
+# Guárdo en una sesión previa, para que se termine de ejecutar. Hacemos esto porque estamos usando un archivo que no tiene los df cargados
+save(eph_filtrada2, EPH2019_2023CAES, Datos_MT_1923, g_etarios_x_precariedad, 
+     Precariedad_por_ano, tasas_1923, TasasPrecariedad_1923_long, TasasPrecariedad_1923, 
+     file = "datosparadashboard.RData")
+
+```
+
+```{r}
+load("datosparadashboard.RData")  # Carga todos los objetos guardados
+
+```
+
+```{r}
+# Definir la salida en el UI
+plotlyOutput("grafinteractivo_precatotal", height = "500px")
+
+```
+
+```{r}
+# Definir la función del servidor
+server <- function(input, output, session) {
+
+  output$grafinteractivo_precatotal <- renderPlotly({
+    grafico_Tasasprecariedad <- ggplot(TasasPrecariedad_1923_long, 
+                                       aes(x = factor(ANO4), y = Valor_tasa, fill = Tasa_tipo)) + 
+      geom_bar(stat = "identity", position = "dodge", 
+               aes(text = paste("Año: ", ANO4, 
+                                "<br>Tasa: ", round(Valor_tasa, 1), "%", 
+                                "<br>Tipo de tasa: ", Tasa_tipo))) +  
+      labs(title = "Tasas de Precariedad por Año",
+           subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+           x = "Año",
+           y = "Tasa (%)",
+           fill = "Tipo de tasa") + 
+      scale_fill_brewer(palette = "Reds") +
+      theme_minimal() + 
+      scale_y_continuous(labels = scales::percent_format(scale = 1, big.mark = ".", decimal.mark = ","))
+    
+    grafinteractivo_precatotal <- ggplotly(grafico_Tasasprecariedad, tooltip = c("x", "y", "fill"))
+    grafinteractivo_precatotal  # Devolver el gráfico interactivo
+  })
+}
+
+
+```
+
+```{r}
+# Llamar al servidor en el entorno de Shiny
+shinyApp(ui = fluidPage(
+    plotlyOutput("grafinteractivo_precatotal", height = "500px")
+), server = server)
+
+```
+
+Row {data-height=350}
+
+### Chart 2
+
+```{r}
+
+```
+
+### Chart 3
+
+```{r}
+
+```
