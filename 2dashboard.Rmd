@@ -1,0 +1,116 @@
+---
+title: "Dinámica de la precariedad laboral a partir de la EPH individual. 3T-2019/2023"
+author: "María Belén Morris y María Magdalena Tóffoli"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    runtime: shiny
+---
+
+
+## Pestaña 1
+
+### Tasas de Precariedad por Año
+
+
+```{r setup, include=FALSE}
+library(rmarkdown)
+library(dplyr)
+library (ggplot2)
+library(plotly)
+library(flexdashboard)
+library(shiny)
+```
+```{r}
+load("datosparadashboard.RData")  # Carga todos los objetos guardados
+```
+```{r}
+# Crear gráfico con ggplot
+grafico_Tasasprecariedad <- ggplot(TasasPrecariedad_1923_long, aes(x = factor(ANO4), y = Valor_tasa, fill = Tasa_tipo)) + 
+  geom_bar(stat = "identity", position = "dodge") +  
+  labs(       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Tasa (%)",
+       fill = "Tipo de tasa") + 
+  scale_fill_brewer(palette = "Reds")+
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1, big.mark = ".", decimal.mark = ","))+
+  aes(text = paste("Año: ", ANO4, #incluí esta línea para que aparezca el nombre de la variable en la etiqueta (x ej Año en lugar de ANO4), pero no hay caso  
+                   "<br>Tasa: ", round(Valor_tasa, 1), "%", 
+                   "<br>Tipo de tasa: ", Tasa_tipo)) 
+
+# Convertir a gráfico interactivo y personalizar las etiquetas emergentes
+grafinteractivo_precatotal <- ggplotly(grafico_Tasasprecariedad, 
+                                       tooltip = c("x", "y", "fill"))  # Especifica las variables
+
+# Mostrar el gráfico interactivo
+grafinteractivo_precatotal
+```
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Niveles de precariedad según categoría ocupacional por año
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(flexdashboard)
+
+# Calcular el porcentaje de cada nivel de precariedad dentro de cada categoría ocupacional y año---revisar
+datos_precariedad <- eph_filtrada2 %>%
+  filter(!is.na(CAT_OCUP)) %>%
+  group_by(ANO4, CAT_OCUP, Niveles_precariedad_total) %>%
+  summarise(Total = n(), .groups = "drop") %>%
+  mutate(Percent = (Total / sum(Total)) * 100)  # Calcular el porcentaje dentro del grupo
+
+# Crear gráfico en ggplot
+graf_precariedadxcatocup <- ggplot(datos_precariedad, 
+                                   aes(x = factor(ANO4), 
+                                       y = Percent, 
+                                       fill = Niveles_precariedad_total)) + 
+  geom_bar(stat= "identity", position = "fill", color = "white") +  # Gráfico apilado con alturas proporcionales
+  geom_text(aes(label = paste0(round(Percent, 1), "%")), 
+            position = position_stack(vjust = 0.5), 
+            size = 4, 
+            color = "white") +
+  facet_wrap(~ CAT_OCUP, drop = TRUE) +  # Separar por categoría ocupacional
+ scale_fill_brewer(palette = "Oranges") + 
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) + 
+  theme_minimal() + 
+  labs(title = "Distribución porcentual de niveles de precariedad por categoría ocupacional y año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Porcentaje",
+       fill = "Niveles de precariedad",
+       caption = "Elaboración propia en base a EPH individual 3T-2019/2023") + 
+  theme(panel.grid.major.x = element_blank(),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
+
+# Convertir a gráfico interactivo con plotly
+graf_precariedad_interactivo <- ggplotly(graf_precariedadxcatocup, tooltip = c("x", "y", "fill"))
+
+# Mostrar en Flexdashboard
+graf_precariedad_interactivo
+
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
