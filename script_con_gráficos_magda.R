@@ -1256,11 +1256,12 @@ grafinteractivo_precatotal <- ggplotly(grafico_Tasasprecariedad,
 # Mostrar el gráfico interactivo
 grafinteractivo_precatotal
 
-# Guardar el gráfico estático como PNG
-ggsave("grafico_precariedad.png", plot = grafinteractivo_precatotal, width = 8, height = 6, dpi = 300)
-
 # Guardar el gráfico interactivo como HTML
 saveWidget(graf_interactivo, "grafico_precariedad.html", selfcontained = TRUE)
 
 library(shiny)
 library(flexdashboard)
+
+save(eph_filtrada2, EPH2019_2023CAES, Datos_MT_1923, g_etarios_x_precariedad, 
+     Precariedad_por_ano, tasas_1923, TasasPrecariedad_1923_long, TasasPrecariedad_1923, 
+     file = "datosparadashboard.RData")
