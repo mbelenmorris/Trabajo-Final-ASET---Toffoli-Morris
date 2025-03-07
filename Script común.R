@@ -773,7 +773,7 @@ Tabla_precariedad_por_ano <- Precariedad_por_ano %>%
 Tabla_precariedad_por_ano
 
 
-#Tipos de precariedad por año (ACA ME QUEDE)
+#Tipos de precariedad por año 
 
 library(ggplot2)
 library(dplyr)
@@ -852,37 +852,6 @@ cuentapropistas_precarios <- cuentapropistas_precarios %>%
 
 
 
-  g_etarios_x_precariedad = calculate_tabulates(eph_filtrada, 
-                                                x = "grupos_etarios", 
-                                                y = "Niveles_precariedad_total", 
-                                                weights = "PONDERA", 
-                                                add.percentage = "row")
+ 
   
-  ambito_x_precariedad = calculate_tabulates(eph_filtrada, 
-                                             x = "ambito_establecimiento", 
-                                             y = "Niveles_precariedad_total", 
-                                             weights = "PONDERA", 
-                                             add.percentage = "row")
   
-  sexo_x_precariedad = calculate_tabulates(eph_filtrada, 
-                                           x = "SEXO", 
-                                           y = "Niveles_precariedad_total", 
-                                           weights = "PONDERA", 
-                                           add.percentage = "row")
-  
-  lugarnacimiento_x_precariedad = calculate_tabulates(eph_filtrada, 
-                                                      x = "lugar_nacimiento", 
-                                                      y = "Niveles_precariedad_total", 
-                                                      weights = "PONDERA", 
-                                                      add.percentage = "row")
-  
-  ambito_x_precaingresos = calculate_tabulates(eph_filtrada, 
-                                               x = "ambito_establecimiento", 
-                                               y = "Preca_ingresos", 
-                                               weights = "PONDERA", 
-                                               add.percentage = "row") 
-  ambito_x_precaintensidad = calculate_tabulates(eph_filtrada, 
-                                                 x = "ambito_establecimiento", 
-                                                 y = "Preca_intensidad", 
-                                                 weights = "PONDERA", 
-                                                 add.percentage = "row")

@@ -887,7 +887,7 @@ Grafico_cuentaprop_precarios_ano= ggplot(cuentapropistas_precarios_long, aes(x =
 print(Grafico_cuentaprop_precarios_ano)
 ```
 
-### Niveles de precariedad por sexo y grupo etario
+#### Niveles de precariedad por sexo y grupo etario
 
 Al segmentar el análisis por sexo y grupo etario encontramos que, en todos los grupos etarios, la proporción de mujeres con niveles de precariedad alta o media es mayor que en el caso de los varones. 
 
@@ -903,7 +903,7 @@ group_by(SEXO, grupos_etarios, Niveles_precariedad_total) %>%
 graf_Precariedad_sexo_GE=ggplot (Precariedad_sexo_GE, aes(x = interaction(SEXO, grupos_etarios), y = Porcentaje, fill = Niveles_precariedad_total)) +
   geom_bar(stat = "identity") +  # Graficar como barras apiladas
   labs(
-    title = "Niveles de Precariedad por Sexo y Grupo Etario",
+    title = "Niveles de Precariedad según Sexo y Grupo Etario",
     subtitle = "Proporción de precariedad según sexo y grupo etario (2019-2023)",
     x = "Sexo y Grupo Etario",
     y = "Porcentaje",
@@ -922,51 +922,224 @@ graf_Precariedad_sexo_GE=ggplot (Precariedad_sexo_GE, aes(x = interaction(SEXO, 
 print(graf_Precariedad_sexo_GE)
 
 ```
-```{r}
-colnames(eph_filtrada)
-
-Algo_Precariedad_sexo_GE <- eph_filtrada %>% 
-  filter (!is.na(grupos_etarios) & !is.na(precariedad_total_asalariados) & !is.na(precariedad_total_cuentapropistas)) %>% 
-  mutate(algo_de_precariedad= case_when(
-          CAT_OCUP == 2 & precariedad_total_cuentapropistas == 0 ~ "No", 
-          CAT_OCUP == 2 & precariedad_total_cuentapropistas > 0 ~ "Sí", 
-          CAT_OCUP == 3 & precariedad_total_asalariados == 0 ~ "No", 
-          CAT_OCUP == 3 & precariedad_total_asalariados > 0 ~ "Sí"
-          
-         ))
 
 
-Algo_Precariedad_sexo_GE <- eph_filtrada %>% 
-  filter(!is.na(grupos_etarios)) %>% 
-  mutate(algo_de_precariedad = case_when(
-    CAT_OCUP == 2 & precariedad_total_cuentapropistas == 0 ~ "No", 
-    CAT_OCUP == 2 & precariedad_total_cuentapropistas > 0 ~ "Sí", 
-    CAT_OCUP == 3 & precariedad_total_asalariados == 0 ~ "No", 
-    CAT_OCUP == 3 & precariedad_total_asalariados > 0 ~ "Sí"
-  )) %>%
-  group_by(SEXO, grupos_etarios, algo_de_precariedad) %>%
-  summarize(casos = sum(PONDERA), .groups = "drop") %>%
-  group_by(SEXO, grupos_etarios) %>%  # Aseguramos el cálculo por cada grupo etario y sexo
-  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
-  ungroup()  # Desagrupamos después del cálculo para evitar errores en ggplot
+#### Niveles de precariedad según lugar de nacimiento
 
-ggplot(Algo_Precariedad_sexo_GE, aes(x = interaction(SEXO, grupos_etarios), 
-                                     y = Porcentaje, fill = algo_de_precariedad)) +
-  geom_bar(stat = "identity", position = "fill") +  # Normalización a 100%
-  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
+Analizando los niveles de precariedad según lugar de nacimiento encontramos que la distribución es similar en general, pero los niveles medio y alto tienen mayor relevancia en el caso de los migrantes de países limítrofes; seis de cada 10 ocupados/as se ubican en alguna de estas categorías. 
+
+```{r echo=FALSE}
+
+Precariedad_lugar_nacimiento <- eph_filtrada %>% 
+  filter(!is.na(Niveles_precariedad_total) & !is.na(lugar_nacimiento))  %>% 
+  group_by(lugar_nacimiento, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = (casos / sum(casos)))
+
+graf_precariedad_lugarnacimiento = ggplot(Precariedad_lugar_nacimiento, aes(x = lugar_nacimiento, y = Porcentaje, fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity") +  # Graficar como barras apiladas
   labs(
-    title = "Distribución de Precariedad por Sexo y Grupo Etario",
-    subtitle = "Porcentaje de personas con alguna precariedad (Sí/No)",
-    x = "Sexo y Grupo Etario",
+    title = "Niveles de Precariedad según lugar de nacimiento",
+    subtitle = "Terceros trimestres, 2019-2023",
+    x = "Lugar de nacimiento",
     y = "Porcentaje",
-    fill = "¿Alguna Precariedad?"
+    fill = "Niveles de Precariedad"
+  ) +
+  scale_fill_brewer(palette = "PuBuGn") +  # Colores para los niveles de precariedad
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas del eje x para mayor legibilidad
+  )+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+
+print(graf_precariedad_lugarnacimiento)
+
+```
+
+#### Niveles de precariedad según nivel educativo
+
+El entrecruzamiento entre nivel educativo y niveles de precariedad arroja como resultado una relación inversamente proporcional entre ambas variables. Así, siete de cada diez personas que no han completado el nivel primario tienen niveles medios o altos de precariedad; a la vez que dos personas cada diez que completaron el nivel universitario se concentran en esas  categorías.  
+
+```{r}
+
+Precariedad_nivel_educativo <- eph_filtrada %>% 
+  filter(!is.na(Niveles_precariedad_total) & !is.na(nivel_educativo_completo))  %>% 
+  group_by(nivel_educativo_completo, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = (casos / sum(casos)))
+
+graf_precariedad_nivel_educativo = ggplot(Precariedad_nivel_educativo, aes(x = nivel_educativo_completo, y = Porcentaje, fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity") +  # Graficar como barras apiladas
+  labs(
+    title = "Niveles de Precariedad según nivel educativo",
+    subtitle = "Terceros trimestres, 2019-2023",
+    x = "Nivel educativo",
+    y = "Porcentaje",
+    fill = "Niveles de Precariedad"
+  ) +
+  scale_fill_brewer(palette = "RdPu") +  # Colores para los niveles de precariedad
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas del eje x para mayor legibilidad
+  )+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+
+print(graf_precariedad_nivel_educativo) 
+```
+
+#### Niveles de precariedad según ámbito de establecimiento
+
+Si observamos niveles de precariedad según el ámbito del establecimiento, encontramos que para cada uno de esos niveles los valores son más importantes en el ámbito privado que en el ámbito público. 
+
+```{r echo=FALSE}
+Precariedad_establecimiento <- eph_filtrada %>%
+  filter(!is.na(Niveles_precariedad_total) & !is.na(ambito_establecimiento)) %>% 
+  group_by(ambito_establecimiento, Niveles_precariedad_total) %>% 
+    summarize(casos = sum(PONDERA)) %>% 
+group_by(ambito_establecimiento) %>% 
+  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
+  ungroup()
+
+
+Tabla_precariedad_por_ambitoestablecimiento <- Precariedad_establecimiento %>%
+  kable(booktabs = F,          
+        caption = "<b>Niveles de precariedad laboral según ámbito de establecimiento. Total de ocupados asalariados y cuentapropistas (31 aglomerados urbanos). 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Ambito", 
+                      "Tipo de precariedad", 
+                      "Casos", 
+                      "Proporción" 
+                      
+        )) %>%   
+  kable_styling(bootstrap_options = c("striped", "hover", "bordered"), 
+                full_width = T, 
+                position = "center") %>% 
+  row_spec(0, bold = TRUE, background = "#e3e5e8", color = "blue") %>%
+  row_spec(seq(1, nrow(Precariedad_establecimiento), 2), background = "#F5F5F5") %>% 
+  collapse_rows(columns = 1, valign = "middle") %>% 
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC")
+
+Tabla_precariedad_por_ambitoestablecimiento
+```
+
+Amerita, sin embargo, revisar qué ocurre con cada uno de los tipos de precariedad que identificamos. 
+
+Mientras que hay valores en los que los asalariados/as del ámbito público y privado se encuentran lejos (precarización en las condiciones de trabajo) hay otros en los que están más cerca (precarización por la intensidad de la jornada laboral, precarización en las formas de contratación). 
+
+```{r}
+Tipo_precariedad_establecimiento <- eph_filtrada %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 3 & !is.na(ambito_establecimiento)) %>% 
+  group_by(ambito_establecimiento) %>%  # Agrupar por ámbito de establecimiento
+  summarise(
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cond_lab = sum(PONDERA[Preca_cond_lab == 30], na.rm = TRUE), 
+    
+    Preca_forma_contrat = sum(PONDERA[Preca_forma_contrat == 10], na.rm = TRUE),
+    
+    Asalariados = sum(PONDERA, na.rm = TRUE),  # Total de asalariados
+    
+    Proporcion_precariedad_ingresosA = (Preca_ingresos / Asalariados),
+    Proporcion_precariedad_intensidadA = (Preca_intensidad / Asalariados),
+    Proporcion_precariedad_cond_labA = (Preca_cond_lab / Asalariados),
+    Proporcion_precariedad_contratA = (Preca_forma_contrat / Asalariados)
+  )
+
+# Transformar el dataframe a formato largo
+Tipo_precariedad_establecimiento_long <- Tipo_precariedad_establecimiento %>%
+  pivot_longer(cols = starts_with("Proporcion_precariedad"), 
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Porcentaje")
+
+# Crear el gráfico de barras
+ggplot(Tipo_precariedad_establecimiento_long, aes(x = ambito_establecimiento, 
+                                                  y = Porcentaje, 
+                                                  fill = Tipo_de_precariedad)) +
+  geom_bar(stat = "identity", position = "dodge") +  # Barra lado a lado (no apilada)
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en formato porcentaje
+  labs(
+    title = "Tipo de Precariedad por Ámbito de Establecimiento",
+    subtitle = "Total asalariados. Terceros trimestres 2019-2023",
+    x = "Ámbito de Establecimiento",
+    y = "Porcentaje",
+    fill = "Tipo de Precariedad"
   ) +
   theme_minimal() +
-  scale_fill_manual(values = c("No" = "#66c2a5", "Sí" = "#fc8d62")) +  
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
-  geom_text(aes(label = sprintf("%.1f%%", Porcentaje)),  # Ahora con formato adecuado
-            position = position_stack(vjust = 0.5), 
-            color = "white", fontface = "bold", size = 3)
+  scale_fill_manual(
+    values = c("Proporcion_precariedad_cond_labA" = "#66c2a5", 
+               "Proporcion_precariedad_contratA" = "#fc8d62", 
+               "Proporcion_precariedad_ingresosA" = "#8da0cb", 
+               "Proporcion_precariedad_intensidadA" = "#e78ac3"),
+    labels = c("Proporcion_precariedad_cond_labA" = "Precariedad en condiciones laborales", 
+               "Proporcion_precariedad_contratA" = "Precariedad en forma de contratación",
+               "Proporcion_precariedad_ingresosA" = "Precariedad por ingresos", 
+               "Proporcion_precariedad_intensidadA" = "Precariedad por intensidad de jornada laboral")
+  )+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotar etiquetas del eje X
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)), 
+            position = position_dodge(width = 0.8), 
+            color = "black", fontface = "bold", size = 3)
+
+```
+
+Si indagamos en los trabajadores/as por cuenta propia, quienes se desempeñan en el sector privado, encontramos una mayor incidencia de la precariedad por ingresos en comparación con los asalariados.En los demás tipos de precariedad, también existen diferencias entre ambos grupos de trabajadores/as. 
+
+
+```{r}
+
+Tipo_precariedad_establecimiento_cuentaprop <- eph_filtrada %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 2 & ambito_establecimiento == "Privado") %>% 
+  group_by(ambito_establecimiento) %>%  # Agrupar por ámbito de establecimiento
+  summarise(
+    Cuentapropistas = sum(PONDERA [ESTADO == 1 & CAT_OCUP == 2], na.rm = TRUE),
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cuentaprop = sum (PONDERA [Preca_cuentaprop ==10], na.rm = TRUE),
+    Proporcion_precariedad_ingresosC = (Preca_ingresos / Cuentapropistas), 
+    Proporcion_precariedad_intensidadC = (Preca_intensidad / Cuentapropistas),
+    Proporcion_precariedad_cuentapropC = (Preca_cuentaprop / Cuentapropistas))
+
+
+# Transformar el dataframe a formato largo
+Tipo_precariedad_establecimiento_cuentaprop_long <- Tipo_precariedad_establecimiento_cuentaprop %>%
+  pivot_longer(cols = starts_with("Proporcion_precariedad"), 
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Porcentaje")
+
+# Crear el gráfico de barras
+ggplot(Tipo_precariedad_establecimiento_cuentaprop_long, aes(x = ambito_establecimiento, 
+                                                  y = Porcentaje, 
+                                                  fill = Tipo_de_precariedad)) +
+  geom_bar(stat = "identity", position = "dodge") +  # Barra lado a lado (no apilada)
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en formato porcentaje
+  labs(
+    title = "Tipo de Precariedad por Ámbito de Establecimiento",
+    subtitle = "Total cuentapropistas. Terceros trimestres 2019-2023",
+    x = "Ámbito de Establecimiento",
+    y = "Porcentaje",
+    fill = "Tipo de Precariedad"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(
+    values = c("Proporcion_precariedad_cuentapropC" = "#fc8d62", 
+               "Proporcion_precariedad_ingresosC" = "#8da0cb", 
+               "Proporcion_precariedad_intensidadC" = "#e78ac3"),
+    labels = c("Proporcion_precariedad_cuentapropC" = "Precariedad por inestabilidad laboral", 
+               "Proporcion_precariedad_ingresosA" = "Precariedad por ingresos", 
+               "Proporcion_precariedad_intensidadA" = "Precariedad por intensidad de jornada laboral")
+  )+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotar etiquetas del eje X
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)), 
+            position = position_dodge(width = 0.8), 
+            color = "black", fontface = "bold", size = 3)
 
 ```
 
