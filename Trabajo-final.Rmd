@@ -7,7 +7,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    number_sections: true
     theme: spacelab
 ---
 
@@ -534,18 +533,17 @@ Desocupados_sexo_gruposetarios
 
 ## La precariedad como fenómeno multidimensional
 
-Para la construcción de un índice de precariedad, rastreamos un conjunto de situaciones presentes en la EPH que nos permiten dar cuenta de diferentes dimensiones del fenómeno. Tal como plantea Fernández Massi [\^1], las características de la fuente estadística permiten referir a la **precarización del empleo** y no a otras aristas igualmente importantes como las dimensiones subjetivas vinculadas a la precarización del trabajo (riesgos psicosociales, satisfacción en el trabajo, utilización de los saberes, entre otras) y las dimensiones colectivas asociadas con las capacidades de acción y representación ante un daño a los derechos laborales.
+Para la construcción de un índice de precariedad, rastreamos un conjunto de situaciones presentes en la EPH que nos permiten dar cuenta de diferentes dimensiones del fenómeno. Tal como plantea [Mariana Fernández Massi](https://doi.org/10.15446/cuad.econ.v33n62.43675), las características de la fuente estadística permiten referir a la **precarización del empleo** y no a otras aristas igualmente importantes como las dimensiones subjetivas vinculadas a la precarización del trabajo (riesgos psicosociales, satisfacción en el trabajo, utilización de los saberes, entre otras) y las dimensiones colectivas asociadas con las capacidades de acción y representación ante un daño a los derechos laborales.
 
 ### Operacionalizando la precariedad laboral
 
 A continuación desarrollamos el modo en el que operacionalizamos la precariedad laboral a partir de la EPH. Consideramos cuatro grande dimensiones: las **condiciones de trabajo**, las **formas de contratación**, la **estabilidad en el trabajo**, los **ingresos** y la **intensidad de la jornada laboral**. Las primeras dos abarcan solo a ocupados asalariados, la tercera abarca solo a ocupados cuentapropistas y las dos últimas incluyen a ambos grupos.
 
-Asignamos un peso específico a cada una de esas dimensiones y, al mismo tiempo, a los distintos indicadores que componen cada dimensión. En la figura a continuación es posible observar esta distribución. 
+Asignamos un peso específico a cada una de esas dimensiones y, al mismo tiempo, a los distintos indicadores que componen cada dimensión. En la figura a continuación es posible observar esta distribución.
 
 ```{r echo=FALSE}
 knitr::include_graphics("DIMENSIÓN DE LA PRECARIEDAD_page-0001.jpg")
 ```
-
 
 #### Precarización en las condiciones laborales
 
@@ -566,7 +564,7 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 
 #### Precarización en las formas de contratación
 
-Esta dimensión abarca solo a ocupados asalariados. Como aproximación empírica utilizamos la pregunta "Ese empleo tiene tiempo de finalización?". Consideramos que esta forma de precariedad existe toda vez que la respuesta es afirmativa. 
+Esta dimensión abarca solo a ocupados asalariados. Como aproximación empírica utilizamos la pregunta "Ese empleo tiene tiempo de finalización?". Consideramos que esta forma de precariedad existe toda vez que la respuesta es afirmativa.
 
 ```{r include=FALSE}
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
@@ -581,7 +579,7 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 
 #### Inestabilidad en el trabajo
 
-Dado que quisimos construir un índice de precariedad válido tanto para asalariados como para trabajadores por cuenta propia, buscamos una aproximación equivalente al tiempo de finalización del empleo. Optamos por seleccionar la pregunta "¿Durante cuánto tiempo ha estado trabajando en ese empleo en forma continua? (con interrupciones laborales no mayores de 15 días)". Consideramos que esta forma de precariedad existe cuando la persona lleva menos de un año de permanencia en ese trabajo. 
+Dado que quisimos construir un índice de precariedad válido tanto para asalariados como para trabajadores por cuenta propia, buscamos una aproximación equivalente al tiempo de finalización del empleo. Optamos por seleccionar la pregunta "¿Durante cuánto tiempo ha estado trabajando en ese empleo en forma continua? (con interrupciones laborales no mayores de 15 días)". Consideramos que esta forma de precariedad existe cuando la persona lleva menos de un año de permanencia en ese trabajo.
 
 ```{r include=FALSE}
 EPH2019_2023CAES <- EPH2019_2023CAES %>% 
@@ -598,7 +596,7 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 
 Para trabajar esta dimensión tomamos la pregunta en la que se declara el monto de los ingresos percibidos por la ocupación principal de la persona. Este interrogante abarca a la población ocupada asalariada y a la cuentapropista.
 
-Debido a la alta tasa de no respuesta en esta pregunta, imputamos a los casos perdidos un valor equivalente a la media del ingreso declarado por las demás personas con las que compartían una serie de características:  sexo, grupo etario, región y sector de actividad. Una vez imputados esos valores, armamos deciles por año para poder ubicar a cada caso. Consideramos que quienes se ubican en los deciles 1 a 3 tienen ingresos bajos, quienes se ubican en los deciles 4 a 8 tienen ingresos medios y, finalmente, a los deciles 9 y 10 les corresponden ingresos altos. 
+Debido a la alta tasa de no respuesta en esta pregunta, imputamos a los casos perdidos un valor equivalente a la media del ingreso declarado por las demás personas con las que compartían una serie de características: sexo, grupo etario, región y sector de actividad. Una vez imputados esos valores, armamos deciles por año para poder ubicar a cada caso. Consideramos que quienes se ubican en los deciles 1 a 3 tienen ingresos bajos, quienes se ubican en los deciles 4 a 8 tienen ingresos medios y, finalmente, a los deciles 9 y 10 les corresponden ingresos altos.
 
 ```{r echo=FALSE}
 EPH2019_2023CAES <- EPH2019_2023CAES %>%
@@ -651,7 +649,6 @@ table(eph_filtrada$ANO4, eph_filtrada$Preca_ingresos_deciles)
 
 ```
 
-
 La otra subdimensión considerada para analizar la precariedad de los ingresos buscó captar si las personas buscaban activamente otro trabajo. Si bien esto puede ocurrir por diferentes razones (insatisfacción en el trabajo, cambios en los proyectos vitales, entre otros motivos) asumimos que un ingreso insuficiente puede empujar dicha búsqueda. Por lo tanto, contemplamos que haber respondido afirmativamente a esta pregunta refuerza una condición de precariedad en relación a los ingresos.
 
 ```{r include=FALSE}
@@ -665,7 +662,7 @@ table(eph_filtrada$Preca_ingresos_buscarotrotrabajo)
 
 #### Precarización por la intensificación de la jornada jornada laboral
 
-Finalmente, para analizar esta dimensión sopesamos, por un lado, si las personas estaban pluriempleadas (si declaraban tener uno o más empleos); por otro, si en la variable INTENSI estaba calificado como sobreocupado/a. Ambas subdimensiones involucran a asalariados y a cuentapropistas. 
+Finalmente, para analizar esta dimensión sopesamos, por un lado, si las personas estaban pluriempleadas (si declaraban tener uno o más empleos); por otro, si en la variable INTENSI estaba calificado como sobreocupado/a. Ambas subdimensiones involucran a asalariados y a cuentapropistas.
 
 ```{r include=FALSE}
 
@@ -696,9 +693,7 @@ eph_filtrada <- eph_filtrada %>%
 
 ### Precariedad total
 
-Llamamos **precariedad_total** a la variable que resume las demás formas de precariedad. Dintinguimos tres niveles de precariedad (bajo, medio y alto) que se desprende de la sumatoria de valores que cada caso obtiene en los diferentes tipos de precariedad. 
-
-
+Llamamos **precariedad_total** a la variable que resume las demás formas de precariedad. Dintinguimos tres niveles de precariedad (bajo, medio y alto) que se desprende de la sumatoria de valores que cada caso obtiene en los diferentes tipos de precariedad.
 
 ```{r}
 eph_filtrada <- eph_filtrada %>%
@@ -720,7 +715,7 @@ eph_filtrada <- eph_filtrada %>%
 eph_filtrada <- eph_filtrada %>%
   mutate(precariedad_total_cuentapropistas = as.numeric(Preca_ingresos +
                                           Preca_intensidad +
-                                          preca_cuentapropista
+                                          Preca_cuentaprop
   ))
 
 eph_filtrada <- eph_filtrada %>% 
@@ -736,11 +731,11 @@ eph_filtrada <- eph_filtrada %>%
                           )))
 ```
 
-#### Análisis de la precariedad {.tabset}
+### Análisis de la precariedad {.tabset}
 
-Veamos la distribución de la precariedad total y de sus componentes entre los años 2019 y 2023. 
+Veamos la distribución de la precariedad total y de sus componentes entre los años 2019 y 2023.
 
-##### Precariedad total
+#### Precariedad total
 
 ```{r}
 
@@ -773,18 +768,205 @@ Tabla_precariedad_por_ano <- Precariedad_por_ano %>%
 Tabla_precariedad_por_ano
 ```
 
+#### Tipos de precariedad por año
 
-##### Tipos de precariedad 
+Si observamos la evolución de cada tipo de precariedad entre 2019 y 2023 para el conjunto de los asalariados observamos que uno de cada cuatro trabaja de forma precaria en tres de las cuatro dimensiones identificadas: condiciones laborales (que tiene valores mayores), ingresos o intensidad de la jornada laboral. La dimensión vinculada a la modalidad de contratación (si el trabajo tiene o no una fecha de finalización) es la que tiene menor relevancia de acuerdo a nuestro análisis, puesto que corresponde a uno de cada 10 asalariados.
+
+Es destacable que el año 2020 sea el que arroja valores máximos de precariedad por ingreso. Cabe aclarar que aquí hemos considerado precarios a quienes tenían salarios bajos (deciles 1 a 3).
+
+```{r echo=FALSE}
+asalariados_precarios <- eph_filtrada %>% 
+  group_by(ANO4) %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 3) %>% 
+  summarise(
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cond_lab = sum(PONDERA[Preca_cond_lab == 30], na.rm = TRUE), 
+    Preca_forma_contrat = sum (PONDERA [Preca_forma_contrat == 10], na.rm = TRUE),
+    Asalariados = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 3], na.rm = TRUE),
+    Proporcion_precariedad_ingresosA = (Preca_ingresos / Asalariados)*100,
+    Proporcion_precariedad_intensidadA = (Preca_intensidad / Asalariados)*100,
+    Proporcion_precariedad_cond_labA = (Preca_cond_lab / Asalariados)*100,
+    Proporcion_precariedad_contratA = (Preca_forma_contrat / Asalariados)*100)
+    
+#gráfico 
+asalariados_precarios_select <- asalariados_precarios %>%
+  select(ANO4, Proporcion_precariedad_ingresosA, Proporcion_precariedad_intensidadA, Proporcion_precariedad_cond_labA, Proporcion_precariedad_contratA)
+
+asalariados_precarios_select <- asalariados_precarios_select %>%
+  rename_with(~ gsub("Proporcion_precariedad_", "", .), starts_with("Proporcion_precariedad"))
 
 
-### Análisis de la precariedad
+asalariados_precarios_long <- asalariados_precarios_select %>%
+  pivot_longer(cols = c("ingresosA", 
+                        "intensidadA", 
+                        "cond_labA", 
+                        "contratA"),  # Especificando las columnas
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Proporcion")
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+# Crear gráfico de líneas
+Grafico_asalariados_precarios_ano= ggplot(asalariados_precarios_long, aes(x = factor(ANO4), y = Proporcion, color = Tipo_de_precariedad, group = Tipo_de_precariedad)) +
+  geom_line(linewidth = 1) +  
+  geom_point(size = 2) +  # Agregar puntos en las líneas
+  scale_color_brewer(palette = "Dark2", 
+                     name = "Tipo de precariedad", 
+                     labels = c("Precariedad en condiciones laborales", "Precariedad en forma de contratación","Precariedad por ingresos","Precariedad por intensidad de jornada laboral")) +  # Cambiar los nombres
+  labs(title = "Asalariados/as precarios/as según tipo de precariedad",
+       subtitle = "Terceros trimestres, 2019-2023",
+       x = "Año",
+       y = "Proporción de precariedad") +
+  theme_minimal() +
+  geom_text(aes(label = paste0(round(Proporcion, 2))), # Etiqueta con el valor de la proporción redondeado
+            vjust = -0.5, hjust = 0.5, size = 2, color = "black") +  # Ajuste de posición de las etiquetas
+  theme(legend.position = "top",  # Mueve la leyenda al top
+        legend.text = element_text(size = 8),  # Ajusta el tamaño del texto de la leyenda
+        legend.title = element_text(size = 10))+
+  guides(color = guide_legend(nrow = 2))
+
+print(Grafico_asalariados_precarios_ano)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+La situación es algo diferente si indagamos lo que ocurre con los/as trabajadores/as por cuenta propia. Por la forma propia del trabajo, las intermitencias laborales son más frecuentes que en el caso de los asalariados; esto se puede observar cuando comparamos lo que sucede con la Precariedad por inestabilidad laboral (cuentapropistas) con la Precariedad en la forma de contratación (asalariados). Para 2021, uno de cada cuatro trabajadores/as por cuenta propia estaba alcanzado por esta condición.
 
-[\^1] Fernández Massi, Mariana. (2014). DIMENSIONES DE LA PRECARIEDAD LABORAL: UN MAPA DE LAS CARACTERÍSTICAS DEL EMPLEO SECTORIAL EN LA ARGENTINA. Cuadernos de Economía, 33(62), 231-257. <https://doi.org/10.15446/cuad.econ.v33n62.43675>
+En relación con la precariedad por ingresos, los valores son sustancialmente mayores en el caso de trabajadores/as por cuenta propia. En el tercer trimestre de 2020, casi la mitad se ubicaba en el grupo de ingresos bajos (deciles 1 a 3).
+
+```{r echo=FALSE}
+
+Cuentapropistas_precarios = eph_filtrada %>% 
+  group_by(ANO4) %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 2) %>% 
+  summarise(
+   Cuentapropistas = sum(PONDERA [ESTADO == 1 & CAT_OCUP == 2], na.rm = TRUE), 
+   Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+   
+   Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+   
+   Preca_cuentaprop = sum (PONDERA [Preca_cuentaprop ==10], na.rm = TRUE),
+   Proporcion_precariedad_ingresosC = (Preca_ingresos / Cuentapropistas)*100, 
+    Proporcion_precariedad_intensidadC = (Preca_intensidad / Cuentapropistas)*100,
+    Proporcion_precariedad_cuentapropC = (Preca_cuentaprop / Cuentapropistas)*100)
+
+#grafico
+
+cuentapropistas_precarios_select <- Cuentapropistas_precarios %>%
+  select(ANO4, Proporcion_precariedad_ingresosC, Proporcion_precariedad_intensidadC, Proporcion_precariedad_cuentapropC) %>% 
+  rename_with(~ gsub("Proporcion_precariedad_", "", .), starts_with("Proporcion_precariedad"))
+
+cuentapropistas_precarios_long <- cuentapropistas_precarios_select %>%
+  pivot_longer(cols = c("ingresosC", 
+                        "intensidadC", 
+                        "cuentapropC"),  # Especificando las columnas
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Proporcion")
+
+
+Grafico_cuentaprop_precarios_ano= ggplot(cuentapropistas_precarios_long, aes(x = factor(ANO4), y = Proporcion, color = Tipo_de_precariedad, group = Tipo_de_precariedad)) +
+  geom_line(linewidth = 1) +  
+  geom_point(size = 2) +  # Agregar puntos en las líneas
+  scale_color_brewer(palette = "Dark2", 
+                     name = "Tipo de precariedad", 
+                     labels = c("Precariedad por inestabilidad laboral","Precariedad por ingresos", "Precariedad por intensidad de jornada laboral")) +  # Cambiar los nombres
+  labs(title = "Cuentapropistas precarios/as según tipo de precariedad",
+       subtitle = "Terceros trimestres, 2019-2023",
+       x = "Año",
+       y = "Proporción de precariedad") +
+  theme_minimal() +
+  geom_text(aes(label = round(Proporcion, 2)), # Etiqueta con el valor de la proporción redondeado
+            vjust = -0.5, hjust = 0.5, size = 2, color = "black") +  # Ajuste de posición de las etiquetas
+  theme(legend.position = "top",  # Mueve la leyenda al top
+        legend.text = element_text(size = 8),  # Ajusta el tamaño del texto de la leyenda
+        legend.title = element_text(size = 10)) +
+  guides(color = guide_legend(nrow = 2))  # Organiza la leyenda en 2 filas
+
+print(Grafico_cuentaprop_precarios_ano)
+```
+
+### Niveles de precariedad por sexo y grupo etario
+
+Al segmentar el análisis por sexo y grupo etario encontramos que, en todos los grupos etarios, la proporción de mujeres con niveles de precariedad alta o media es mayor que en el caso de los varones. 
+
+A su vez, los niveles de precariedad media y alta aparecen con mayor frecuencia en los segmentos etarios más jóvenes. De las mujeres que presentan algún rasgo de precariedad, el 64% presenta niveles medios o altos, en el caso de los varones el porcentaje es del 59,3%. 
+
+```{r echo=FALSE}
+Precariedad_sexo_GE <- eph_filtrada %>% 
+  filter(!is.na(Niveles_precariedad_total) & !is.na(grupos_etarios)) %>% 
+group_by(SEXO, grupos_etarios, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = (casos / sum(casos)))
+
+graf_Precariedad_sexo_GE=ggplot (Precariedad_sexo_GE, aes(x = interaction(SEXO, grupos_etarios), y = Porcentaje, fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity") +  # Graficar como barras apiladas
+  labs(
+    title = "Niveles de Precariedad por Sexo y Grupo Etario",
+    subtitle = "Proporción de precariedad según sexo y grupo etario (2019-2023)",
+    x = "Sexo y Grupo Etario",
+    y = "Porcentaje",
+    fill = "Niveles de Precariedad"
+  ) +
+  scale_fill_brewer(palette = "Greens") +  # Colores para los niveles de precariedad
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas del eje x para mayor legibilidad
+  )+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+
+
+print(graf_Precariedad_sexo_GE)
+
+```
+```{r}
+colnames(eph_filtrada)
+
+Algo_Precariedad_sexo_GE <- eph_filtrada %>% 
+  filter (!is.na(grupos_etarios) & !is.na(precariedad_total_asalariados) & !is.na(precariedad_total_cuentapropistas)) %>% 
+  mutate(algo_de_precariedad= case_when(
+          CAT_OCUP == 2 & precariedad_total_cuentapropistas == 0 ~ "No", 
+          CAT_OCUP == 2 & precariedad_total_cuentapropistas > 0 ~ "Sí", 
+          CAT_OCUP == 3 & precariedad_total_asalariados == 0 ~ "No", 
+          CAT_OCUP == 3 & precariedad_total_asalariados > 0 ~ "Sí"
+          
+         ))
+
+
+Algo_Precariedad_sexo_GE <- eph_filtrada %>% 
+  filter(!is.na(grupos_etarios)) %>% 
+  mutate(algo_de_precariedad = case_when(
+    CAT_OCUP == 2 & precariedad_total_cuentapropistas == 0 ~ "No", 
+    CAT_OCUP == 2 & precariedad_total_cuentapropistas > 0 ~ "Sí", 
+    CAT_OCUP == 3 & precariedad_total_asalariados == 0 ~ "No", 
+    CAT_OCUP == 3 & precariedad_total_asalariados > 0 ~ "Sí"
+  )) %>%
+  group_by(SEXO, grupos_etarios, algo_de_precariedad) %>%
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%
+  group_by(SEXO, grupos_etarios) %>%  # Aseguramos el cálculo por cada grupo etario y sexo
+  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
+  ungroup()  # Desagrupamos después del cálculo para evitar errores en ggplot
+
+ggplot(Algo_Precariedad_sexo_GE, aes(x = interaction(SEXO, grupos_etarios), 
+                                     y = Porcentaje, fill = algo_de_precariedad)) +
+  geom_bar(stat = "identity", position = "fill") +  # Normalización a 100%
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
+  labs(
+    title = "Distribución de Precariedad por Sexo y Grupo Etario",
+    subtitle = "Porcentaje de personas con alguna precariedad (Sí/No)",
+    x = "Sexo y Grupo Etario",
+    y = "Porcentaje",
+    fill = "¿Alguna Precariedad?"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("No" = "#66c2a5", "Sí" = "#fc8d62")) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  geom_text(aes(label = sprintf("%.1f%%", Porcentaje)),  # Ahora con formato adecuado
+            position = position_stack(vjust = 0.5), 
+            color = "white", fontface = "bold", size = 3)
+
+```
+

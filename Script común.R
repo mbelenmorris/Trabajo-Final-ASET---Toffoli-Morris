@@ -10,6 +10,7 @@ library(dplyr)
 library(ggthemes)
 library(haven)  # Para manejar labelled
 library(RColorBrewer)
+library(kableExtra)
 
 
 
@@ -590,7 +591,7 @@ EPH2019_2023CAES <- EPH2019_2023CAES %>%
 
 
 
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "preca.cuentaprop", weight= "PONDERA", add.percentage = "col")
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "preca_cuentapropista", weight= "PONDERA", add.percentage = "col")
 
 ##PRECARIEDAD POR INGRESOS 
 
@@ -770,11 +771,7 @@ Tabla_precariedad_por_ano <- Precariedad_por_ano %>%
   footnote(symbol = "Elaboración propia en base a EPH-INDEC")
   
 Tabla_precariedad_por_ano
-precariedad_cuentaprop <- eph_filtrada %>% 
-  filter(ESTADO == 1 & CAT_OCUP == 2) %>%
-  group_by(ANO4, Preca_cond_lab, Preca_ingresos, Preca_forma_contrat, Preca_intensidad) %>%  
-  summarise(casos = n(), .groups = "drop") %>%
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
 
 #Tipos de precariedad por año (ACA ME QUEDE)
 
@@ -791,7 +788,7 @@ eph_long <- eph_filtrada %>%
 
 # Crear el gráfico de líneas
 graf_tipo_precariedad <- ggplot(eph_long, aes(x = factor(ANO4), y = Valor, color = Tipo_de_precariedad, group = Tipo_de_precariedad)) +
-  geom_line(size = 1) +  
+  geom_line(linewidth = 1) +  
   geom_point(size = 2) +  # Opcional: agrega puntos en las líneas
   scale_color_brewer(palette = "Oranges") +  
   labs(title = "Tipo de precariedad por año",
@@ -855,40 +852,37 @@ cuentapropistas_precarios <- cuentapropistas_precarios %>%
 
 
 
-colnames(eph_filtrada)
-
-tabulados <- list(
   g_etarios_x_precariedad = calculate_tabulates(eph_filtrada, 
                                                 x = "grupos_etarios", 
                                                 y = "Niveles_precariedad_total", 
                                                 weights = "PONDERA", 
-                                                add.percentage = "row"),
+                                                add.percentage = "row")
   
   ambito_x_precariedad = calculate_tabulates(eph_filtrada, 
                                              x = "ambito_establecimiento", 
                                              y = "Niveles_precariedad_total", 
                                              weights = "PONDERA", 
-                                             add.percentage = "row"),
+                                             add.percentage = "row")
   
   sexo_x_precariedad = calculate_tabulates(eph_filtrada, 
                                            x = "SEXO", 
                                            y = "Niveles_precariedad_total", 
                                            weights = "PONDERA", 
-                                           add.percentage = "row"),
+                                           add.percentage = "row")
   
   lugarnacimiento_x_precariedad = calculate_tabulates(eph_filtrada, 
                                                       x = "lugar_nacimiento", 
                                                       y = "Niveles_precariedad_total", 
                                                       weights = "PONDERA", 
-                                                      add.percentage = "row"),
+                                                      add.percentage = "row")
   
   ambito_x_precaingresos = calculate_tabulates(eph_filtrada, 
                                                x = "ambito_establecimiento", 
                                                y = "Preca_ingresos", 
                                                weights = "PONDERA", 
-                                               add.percentage = "row"), 
+                                               add.percentage = "row") 
   ambito_x_precaintensidad = calculate_tabulates(eph_filtrada, 
                                                  x = "ambito_establecimiento", 
                                                  y = "Preca_intensidad", 
                                                  weights = "PONDERA", 
-                                                 add.percentage = "row"))
+                                                 add.percentage = "row")
