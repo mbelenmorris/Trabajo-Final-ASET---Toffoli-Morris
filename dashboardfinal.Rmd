@@ -1,34 +1,45 @@
 ---
 title: "Dinámica de la precariedad laboral a partir de la EPH individual. 3T-2019/2023"
-author: "María Belén Morris y María Magdalena Tóffoli"
+author: "María Magdalena Tóffoli y María Belén Morris"
 output:
   flexdashboard::flex_dashboard:
+   encoding: UTF-8
    social: menu
    runtime: shiny
 ---
 
-```{r setup, include=FALSE}
+```{r, include=FALSE}
 library(rmarkdown)
 library(dplyr)
 library (ggplot2)
 library(plotly)
 library(flexdashboard)
 library(shiny)
-library(haven)
-```
-```{r}
-load("datosparadashboard.RData")  # Carga todos los objetos guardados
+library(stringi)  # Para limpiar caracteres especiales
+library(scales)
+library(haven) #porque hay variables labelled que generan errores en la visualización
 ```
 
-Tasas de precariedad por año
-=======================================================================
+```{r}
+#cargo algunos data frames de interés para este dashboard
+load("datosparadashboard.RData")
+```
+
+```{r}
+# Convertir caracteres a UTF-8 y limpiar acentos/tildes
+eph_filtrada2 <- eph_filtrada2 %>%
+  mutate(across(where(is.labelled), ~ as_factor(.))) %>%
+  mutate(across(where(is.character), ~ stri_trans_general(., "Latin-ASCII")))  # Elimina tildes
+```
+
+# Tasas de precariedad por año
 
 ```{r}
 # Crear gráfico con ggplot
 grafico_Tasasprecariedad <- ggplot(TasasPrecariedad_1923_long, aes(x = factor(ANO4), y = Valor_tasa, fill = Tasa_tipo)) + 
   geom_bar(stat = "identity", position = "dodge") +  
   labs(       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
-       x = "Año",
+       x = "Anio",
        y = "Tasa (%)",
        fill = "Tipo de tasa") + 
   scale_fill_brewer(palette = "Reds")+
@@ -36,8 +47,10 @@ grafico_Tasasprecariedad <- ggplot(TasasPrecariedad_1923_long, aes(x = factor(AN
   scale_y_continuous(labels = scales::percent_format(scale = 1, big.mark = ".", decimal.mark = ","))+
   aes(text = paste("Año: ", ANO4, #incluí esta línea para que aparezca el nombre de la variable en la etiqueta (x ej Año en lugar de ANO4), pero no hay caso  
                    "<br>Tasa: ", round(Valor_tasa, 1), "%", 
-                   "<br>Tipo de tasa: ", Tasa_tipo)) 
+                   "<br>Tipo de tasa: ", Tasa_tipo))
+```
 
+```{r}
 # Convertir a gráfico interactivo y personalizar las etiquetas emergentes
 grafinteractivo_precatotal <- ggplotly(grafico_Tasasprecariedad, 
                                        tooltip = c("x", "y", "fill"))  # Especifica las variables
@@ -46,30 +59,13 @@ grafinteractivo_precatotal <- ggplotly(grafico_Tasasprecariedad,
 grafinteractivo_precatotal
 ```
 
-Precariedad por variables demográficas
-=======================================================================
+# Precariedad por variables demográficas
 
 ```{r}
-library(shiny)
-library(plotly)
-library(dplyr)
-library(ggplot2)
-library(stringi)  # Para limpiar caracteres especiales
-library(scales)
-library(haven) #porque hay variables labelled que generan errores en la visualización
-
-# Convertir caracteres a UTF-8 y limpiar acentos/tildes
-eph_filtrada2 <- eph_filtrada2 %>%
-  mutate(across(where(is.labelled), ~ as_factor(.))) %>%
-  mutate(across(where(is.character), ~ stri_trans_general(., "Latin-ASCII")))  # Elimina tildes
-```
-
-```{r}
+#COn este código creamos el widget de shiny
 # Interfaz de usuario
 ui <- fluidPage(
-  titlePanel("Evolución de Niveles de Precariedad"),
-  
-  sidebarLayout(
+    sidebarLayout(
     sidebarPanel(
       selectizeInput(
         inputId = "Variable",  # Cambié de "Categoria" a "Variable"
@@ -95,7 +91,7 @@ server <- function(input, output, ...) {
     req(input$Variable)  # Asegurar que no sea NULL
 
     # Filtrar las filas donde la variable seleccionada no es NA
-    datos_filtrados <- eph_filtrada2 %>%
+    datos_filtrados <- eph_filtrada2 %>% #datos filtrados nos sirve para luego construir el gráfico
       filter(!is.na(.data[[input$Variable]])) %>%  # Filtra filas con NA en la variable seleccionada
       group_by(ANO4, .data[[input$Variable]], Niveles_precariedad_total) %>%
       summarise(Niveles_precariedad_total_sum = sum(PONDERA, na.rm = TRUE), .groups = "drop") %>%
@@ -108,7 +104,8 @@ server <- function(input, output, ...) {
       geom_bar(stat = "identity", position = "dodge") +  
       guides(fill = guide_legend(title = "Niveles de precariedad")) +
       theme_minimal() +
-      labs(x = "Año",
+      labs(title= "Evolución de los niveles de precariedad",
+           x = "Año",
            y = "Frecuencia absoluta",
            fill = "Niveles de Precariedad") + 
 theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -130,37 +127,14 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1),
   })
 }
 
-shinyApp(ui, server)
-
 ```
 
-
-Precariedad por variables laborales
-=======================================================================
-
-
-```{r}
-library(shiny)
-library(plotly)
-library(dplyr)
-library(ggplot2)
-library(stringi)  # Para limpiar caracteres especiales
-library(scales)
-library(haven) #porque hay variables labelled que generan errores en la visualización
-
-# Convertir caracteres a UTF-8 y limpiar acentos/tildes
-eph_filtrada2 <- eph_filtrada2 %>%
-  mutate(across(where(is.labelled), ~ as_factor(.))) %>%
-  mutate(across(where(is.character), ~ stri_trans_general(., "Latin-ASCII")))  # Elimina tildes
-```
-
-
+# Precariedad por variables laborales
 
 ```{r}
  # Interfaz de usuario
 ui <- fluidPage(
-  titlePanel("Evolución de niveles de precariedad"),
-  sidebarLayout(
+    sidebarLayout(
     sidebarPanel(
       selectizeInput(
         inputId = "Variable",  # Cambié de "Categoria" a "Variable"
@@ -187,6 +161,13 @@ server <- function(input, output, ...) {
     # Filtrar las filas donde la variable seleccionada no es NA
     datos_filtrados <- eph_filtrada2 %>%
       filter(!is.na(.data[[input$Variable]])) %>%  # Filtra filas con NA en la variable seleccionada
+      mutate(
+        CAT_OCUP = case_when(
+          CAT_OCUP == 2 ~ "Trabajadores cuenta propia",
+          CAT_OCUP == 3 ~ "Trabajadores asalariados",
+          TRUE ~ as.character(CAT_OCUP)  # Mantener los demás valores sin cambios
+        )
+      ) %>%
       group_by(ANO4, .data[[input$Variable]], Niveles_precariedad_total) %>%
       summarise(Niveles_precariedad_total_sum = sum(PONDERA, na.rm = TRUE), .groups = "drop") %>%
       group_by(ANO4, .data[[input$Variable]]) %>%
@@ -198,7 +179,8 @@ server <- function(input, output, ...) {
       geom_bar(stat = "identity", position = "dodge") +  
       guides(fill = guide_legend(title = "Niveles de precariedad")) +
       theme_minimal() +
-      labs(x = "Anio",
+      labs(title= "Evolución de los niveles de precariedad",
+           x = "Anio",
            y = "Frecuencia absoluta",
            fill = "Niveles de Precariedad") + 
 theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -220,7 +202,10 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1),
   })
 }
 
-shinyApp(ui, server)
-
 ```
 
+```{r}
+#Acá creamos un archivo en formato html
+rmarkdown::render("dashboardfinal.Rmd", output_format = "html_document", output_file = "dashboardfinal.html")
+
+```
