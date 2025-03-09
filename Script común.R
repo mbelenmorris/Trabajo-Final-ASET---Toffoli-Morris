@@ -23,7 +23,6 @@ EPH2019_2023CAES=get_microdata(year=2019:2023, period = 1,type = "individual", v
 EPH2019_2023CAES <- EPH2019_2023CAES %>% eph::organize_labels()
 EPH2019_2023CAES=organize_caes(EPH2019_2023CAES)
 
-TABLAP21 <- calculate_tabulates(EPH2019_2023CAES, "ANO4", "P21", "PONDERA")#lo hice para ver la distribución original de p21
 
 #Variables nuevas y recodificadas (SEXO, PP04B_COD (CAES), PP04C(CANTIDAD EMPLEADOS), Grupos etarios, ámbito del establecimiento, región, lugar de nacimiento, nivel_educativo_completo)
 
@@ -147,13 +146,11 @@ print(graf_sexoyaño)
 
 #grupos etarios y año
 
-unique(EPH2019_2023CAES$grupos_etarios)
 gruposetarios_año_pond <- EPH2019_2023CAES %>% filter (!is.na(grupos_etarios)) %>% 
   group_by(ANO4, grupos_etarios) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
-# Convertir variables labelled a formatos adecuados
 gruposetarios_año_pond <- gruposetarios_año_pond %>%
   mutate(
     ANO4 = as_factor(ANO4),  # Convertir año a factor
@@ -164,7 +161,6 @@ gruposetarios_año_pond <- gruposetarios_año_pond %>%
   mutate(porcentaje = casos / sum(casos)) %>%  # Calcular proporciones dentro de cada año
   ungroup()
 
-# Crear gráfico de barras apiladas. no logro generar con etiquetas de porcentaje, revisar
 graf_gruposetarios <- ggplot(gruposetarios_año_pond, aes(x = ANO4, y = porcentaje, fill = grupos_etarios)) + 
   geom_bar(stat = "identity", ) +  
   scale_fill_brewer(palette = "Set3") +  # Paleta de colores
@@ -176,59 +172,18 @@ graf_gruposetarios <- ggplot(gruposetarios_año_pond, aes(x = ANO4, y = porcenta
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  
   guides(size = "none")+
   geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
-            position = position_stack(vjust = 0.5),  # Centrar las etiquetas dentro de las pilas
+            position = position_stack(vjust = 0.5),  # Centrar las etiquetas en las pilas
             color = "black", fontface = "bold", size = 3)
+
 print(graf_gruposetarios)
 
 #Lugar de nacimiento 
 
-Muestra_lugarnacimiento=EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
-  group_by(ANO4) %>% 
-  tabyl(lugar_nacimiento) %>%
-  adorn_totals() %>% 
-  adorn_pct_formatting()
-
 lugarnacimiento_año_pond <- EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
   group_by(ANO4, lugar_nacimiento) %>% 
   summarize(casos = sum(PONDERA)) %>% 
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
-
-#sexo
-sexo_año_pond <- EPH2019_2023CAES %>% 
-  group_by(ANO4, SEXO) %>% 
-  summarize(casos = sum(PONDERA)) %>% 
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
-
-#grupos etarios
-
-Muestra_Gruposetarios1=EPH2019_2023CAES %>%
-  filter(!is.na(grupos_etarios)) %>%  # Filtra los valores NA
-  tabyl(grupos_etarios) %>%
-  adorn_totals() %>% 
-  adorn_pct_formatting()
-
-gruposetarios_año_pond <- EPH2019_2023CAES %>% filter(!is.na(grupos_etarios)) %>% 
-  group_by(ANO4, grupos_etarios) %>% 
-  summarize(casos = sum(PONDERA)) %>% 
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
-
-
-#lugar de nacimiento
-unique(EPH2019_2023CAES$lugar_nacimiento)
-
-Muestra_lugarnacimiento=EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
-  group_by(ANO4) %>% 
-  tabyl(lugar_nacimiento) %>%
-  adorn_totals() %>% 
-  adorn_pct_formatting()
-
-lugarnacimiento_año_pond <- EPH2019_2023CAES %>% filter(!is.na(lugar_nacimiento)) %>% 
-  group_by(ANO4, lugar_nacimiento) %>% 
-  summarize(casos = sum(PONDERA)) %>% 
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
-
-# Convertir variables adecuadas y calcular proporciones dentro de cada año
 lugarnacimiento_año_pond <- lugarnacimiento_año_pond %>%
   mutate(
     ANO4 = as_factor(ANO4),  # Convertir año a factor
@@ -242,18 +197,19 @@ lugarnacimiento_año_pond <- lugarnacimiento_año_pond %>%
 # Crear gráfico de barras apiladas
 graf_lugar_nacimiento <- ggplot(lugarnacimiento_año_pond, aes(x = ANO4, y = porcentaje, fill = lugar_nacimiento)) + 
   geom_bar(stat = "identity") +
-  scale_fill_brewer(palette = "Greens") +  # Paleta de colores
+  scale_fill_brewer(palette = "Set3") +  # Paleta de colores
   labs(title = "Lugar de nacimiento por año",
        subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
        x = "Año",
        y = "Población") +
   theme_calc() +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Mostrar en porcentaje
-  guides(size = "none")
+  guides(size = "none")+
+  geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
 print(graf_lugar_nacimiento)
 
-# Guardar imagen del gráfico
-ggsave(filename = "graf_lugar_nacimiento.jpg", plot = graf_lugar_nacimiento, width = 8, height = 6, dpi = 300)
 
 #nivel educativo 
 
@@ -306,14 +262,97 @@ sector.de.actividad_pond <- EPH2019_2023CAES %>%
 cond_actividad_pond <- EPH2019_2023CAES %>% 
   group_by(ANO4, ESTADO) %>% 
   summarize(casos = sum(PONDERA)) %>% 
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+  mutate(Porcentaje = round((casos / sum(casos)), 2),
+         Condición_actividad = case_when(
+           ESTADO== 1 ~ "Ocupado/a",
+           ESTADO == 2 ~ "Desocupado/a",
+           ESTADO == 3 ~ "Inactivo/a",
+           ESTADO == 4 ~ "Menor de 10 anos",
+           TRUE ~ "Otro"  # Para manejar cualquier otro valor posible
+         )) 
+cond_actividad_pond_acotada = cond_actividad_pond %>% 
+  select(-casos, -ESTADO) 
+
+graf_cond_actividad <- ggplot(cond_actividad_pond_acotada, aes(x = ANO4, y = Porcentaje, fill = Condición_actividad)) + 
+  geom_bar(stat = "identity", position = "fill") +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3") +  # Paleta de colores
+  labs(title = "Codición de actividad por año",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +  # Mostrar en porcentaje
+  guides(size = "none")+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+print(graf_cond_actividad)
+
 
 #categoría ocupacional:notar que hay un valor 0 que no figura en el diseño. segun el anexo: El código 0 identifica los casos a los cuales no les corresponde la secuencia analizada. ACÁ SERÍAN LOS INACTIVOS Y MENORES DE 10
 categ_ocupacional_pond = EPH2019_2023CAES %>% 
   filter(ESTADO == 1) %>% 
   group_by(ANO4, CAT_OCUP) %>% 
   summarize(casos = sum(PONDERA, na.rm = TRUE)) %>% 
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 2),
+         Categoría_ocupacional = case_when(
+           CAT_OCUP== 1 ~ "Patrón",
+           CAT_OCUP == 2 ~ "Cuenta propia",
+           CAT_OCUP == 3 ~ "Obrero o empleado",
+           CAT_OCUP == 4 ~ "Trabajador familiar sin remuneración",
+           TRUE ~ NA  
+         ))
+
+categ_ocupacional_pond_filtrada <- categ_ocupacional_pond %>%
+  filter(!is.na(Categoría_ocupacional))
+
+graf_cat_ocup <- ggplot(categ_ocupacional_pond_filtrada, aes(x = ANO4, y = Porcentaje, fill = Categoría_ocupacional)) + 
+  geom_bar(stat = "identity", position = "fill") +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set3") +  
+  labs(title = "Categoría ocupacional por año (Total ocupados)",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) +  # Mostrar en porcentaje
+  guides(size = "none")
+
+print(graf_cat_ocup)
+
+# Ámbito del establecimiento 
+
+ambitoestablecimiento_año_pond <- EPH2019_2023CAES %>% 
+  filter(!is.na(ambito_establecimiento)) %>% 
+  group_by(ANO4, ambito_establecimiento) %>% 
+  summarize(casos = sum(PONDERA))
+
+ambitoestablecimiento_año_pond <- ambitoestablecimiento_año_pond %>%
+  mutate(
+    ANO4 = as_factor(ANO4),  
+    casos = as.numeric(casos),  
+    ambito_establecimiento = as_factor(ambito_establecimiento)  
+  ) %>%
+  group_by(ANO4) %>%
+  mutate(porcentaje = casos / sum(casos)) %>%  
+  ungroup()
+
+graf_ambitoestablecimiento <- ggplot(ambitoestablecimiento_año_pond, aes(x = ANO4, y = porcentaje, fill = ambito_establecimiento)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette = "Set3") +  
+  labs(title = "Ambito del establecimiento de trabajo por año (Total ocupados)",
+       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
+       x = "Año",
+       y = "Población") +
+  theme_calc() +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Mostrar en porcentaje
+  guides(size = "none")+
+  geom_text(aes(label = scales::percent(porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+print(graf_ambitoestablecimiento)
+
 
 #categoría de inactividad
 unique(EPH2019_2023CAES$CAT_INAC)
@@ -358,9 +397,107 @@ Datos_MT_1923<- EPH2019_2023CAES %>%
 
 TasasMT_1923 <- Datos_MT_1923 %>% select(ANO4, starts_with("Tasa"))
 
-#en lo que sigue, incorporamos cruces entre variables para descripción de la población de la muestra
+# Tasas desagregadas
+# sexo
 
-colnames(EPH2019_2023CAES)
+TASAS_MT_SEXO_1923 <- EPH2019_2023CAES %>%  
+  group_by(ANO4, SEXO) %>% 
+  summarize(
+    Poblacion          = sum(PONDERA),
+    Ocupados          = sum(PONDERA[ESTADO == 1]),
+    Desocupados       = sum(PONDERA[ESTADO == 2]),
+    PNEA               = sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PEA                = Ocupados + Desocupados,
+    Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
+    Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
+    Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
+    Subocupados       = Suboc_demandante + Suboc_no_demand,
+    'Tasa Actividad'  = (PEA / Poblacion) * 100,
+    'Tasa Inactividad' = (PNEA / Poblacion) * 100,
+    'Tasa Empleo'     = (Ocupados / Poblacion) * 100,
+    'Tasa Desocupacion' = (Desocupados / PEA) * 100,
+    'Tasa ocupados demandantes' = (Ocupados_demand / PEA) * 100,
+    'Tasa Subocupación' = (Subocupados / PEA) * 100,
+    'Tasa Subocupación demandante' = (Suboc_demandante / PEA) * 100,
+    'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
+  ) %>%
+  # Redondear las tasas a 1 decimal
+  mutate(across(starts_with("Tasa"), ~ round(., 1)))
+
+TasasMT_SEXO_SELECTED <- TASAS_MT_SEXO_1923 %>% select(ANO4, SEXO, 'Tasa Actividad', 'Tasa Inactividad', 'Tasa Empleo','Tasa Desocupacion','Tasa Subocupación')
+TablaTasasMT_SEXO <- TasasMT_SEXO_SELECTED %>%
+  kable(booktabs = TRUE,          
+        caption = "<b>Principales tasas del mercado de trabajo según sexo. Total de 31 aglomerados urbanos. 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Año", 
+                      "Sexo",
+                      "Tasa de actividad", 
+                      "Tasa de inactividad", 
+                      "Tasa de empleo", 
+                      "Tasa de desocupación", 
+                      "Tasa de subocupación")) %>%   
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "bordered"), 
+                full_width = T, 
+                position = "center") %>% 
+  row_spec(0, bold = TRUE, background = "#4dd686", color = "white") %>%
+  row_spec(seq(1, nrow(TasasMT_SEXO_SELECTED), 2), background = "#F5F5F5") %>% 
+  collapse_rows(columns = 1, valign = "middle") %>%  
+  column_spec(1, bold = TRUE) %>% 
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC")
+TablaTasasMT_SEXO 
+
+
+
+# Grupos etarios
+
+TASAS_MT_gruposetarios_1923 <- EPH2019_2023CAES %>% filter(!is.na(grupos_etarios)) %>%  
+  group_by(ANO4, grupos_etarios) %>% 
+  summarize(
+    Poblacion          = sum(PONDERA),
+    Ocupados          = sum(PONDERA[ESTADO == 1]),
+    Desocupados       = sum(PONDERA[ESTADO == 2]),
+    PNEA               = sum(PONDERA[ESTADO %in% c(3, 4)]), 
+    PEA                = Ocupados + Desocupados,
+    Ocupados_demand   = sum(PONDERA[ESTADO == 1 & PP03J == 1]),
+    Suboc_demandante  = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J == 1]),
+    Suboc_no_demand   = sum(PONDERA[ESTADO == 1 & INTENSI == 1 & PP03J %in% c(2, 9)]),
+    Subocupados       = Suboc_demandante + Suboc_no_demand,
+    'Tasa Actividad'  = (PEA / Poblacion) * 100,
+    'Tasa Inactividad' = (PNEA / Poblacion) * 100,
+    'Tasa Empleo'     = (Ocupados / Poblacion) * 100,
+    'Tasa Desocupacion' = (Desocupados / PEA) * 100,
+    'Tasa ocupados demandantes' = (Ocupados_demand / PEA) * 100,
+    'Tasa Subocupación' = (Subocupados / PEA) * 100,
+    'Tasa Subocupación demandante' = (Suboc_demandante / PEA) * 100,
+    'Tasa Subocupación no demandante' = (Suboc_no_demand / PEA) * 100
+  ) %>%
+  # Redondear las tasas a 1 decimal
+  mutate(across(starts_with("Tasa"), ~ round(., 1)))
+
+#TABLA PARA TASAS DEL MT DESAGREGADAS POR GRUPOS ETARIOS
+TasasMT_GRUPOSETARIOS_SELECTED <- TASAS_MT_gruposetarios_1923 %>% select(ANO4, grupos_etarios, 'Tasa Actividad', 'Tasa Inactividad', 'Tasa Empleo','Tasa Desocupacion','Tasa Subocupación')
+
+TablaTasasMT_GRUPOSETARIOS <- TasasMT_GRUPOSETARIOS_SELECTED %>%
+  kable(booktabs = TRUE,          
+        caption = "<b>Principales tasas del mercado de trabajo según grupos etarios. Total de 31 aglomerados urbanos. 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Año", 
+                      "Grupos etarios",
+                      "Tasa de actividad", 
+                      "Tasa de inactividad", 
+                      "Tasa de empleo", 
+                      "Tasa de desocupación", 
+                      "Tasa de subocupación")) %>%   
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "bordered"), 
+                full_width = T, 
+                position = "center") %>% 
+  row_spec(0, bold = TRUE, background = "#fcba03", color = "white") %>%
+  row_spec(seq(1, nrow(TasasMT_SEXO_SELECTED), 2), background = "#F5F5F5") %>% 
+  collapse_rows(columns = 1, valign = "middle", latex_hline = "none") %>%  
+  column_spec(1, extra_css = "font-weight: bold;") %>%  
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC")
+
+TablaTasasMT_GRUPOSETARIOS
 
 #ESTADO y combinaciones con sexo y edad
 unique(EPH2019_2023CAES$ESTADO)
@@ -412,6 +549,25 @@ Estado1_sexo_edad <- EPH2019_2023CAES %>%
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
 
+Ocupados_sexo_edad = Estado1_sexo_edad %>%
+  kable(booktabs = TRUE,          
+        caption = "<b>Distribución ocupados de acuerdo a sexo y grupos etarios</b>", 
+        align = c('l', 'c', 'c', 'c', 'r'), 
+        col.names = c("Año", 
+                      "Sexo", 
+                      "Grupo etario", 
+                      "Casos", 
+                      "Porcentaje")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "bordered"), 
+                full_width = TRUE, 
+                position = "center") %>%
+  row_spec(0, bold = TRUE, background = "#a503fc", color = "white") %>%
+  row_spec(seq(1, nrow(Estado1_sexo_edad), 2), background = "#F5F5F5") %>% 
+  collapse_rows(columns = 1, valign = "middle", latex_hline = "none") %>%  
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC")
+
+Ocupados_sexo_edad 
+
 #Población desocupada por sexo y edad
 Estado2_sexo_gruposetarios <- EPH2019_2023CAES %>%  
   filter(!is.na(grupos_etarios) & ESTADO == 2) %>%  # Filtrar NA en grupos_etarios y quedarnos con ESTADO == 2
@@ -419,6 +575,31 @@ Estado2_sexo_gruposetarios <- EPH2019_2023CAES %>%
   summarize(casos = sum(PONDERA), .groups = "drop") %>%  
   group_by(ANO4) %>%  
   mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+Estado2_sexo_gruposetarios <- EPH2019_2023CAES %>%  
+  filter(!is.na(grupos_etarios) & ESTADO == 2) %>%  # Filtrar NA en grupos_etarios y quedarnos con ESTADO == 2
+  group_by(ANO4, SEXO, grupos_etarios) %>% 
+  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
+  group_by(ANO4) %>%  
+  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
+
+Desocupados_sexo_gruposetarios = Estado2_sexo_gruposetarios %>% 
+  kable(booktabs = TRUE,          
+        caption = "Distribución de desocupados de acuerdo a sexo y grupos etarios", 
+        align = c('l', 'c', 'c', 'c', 'r'), 
+        col.names = c("Ano", 
+                      "Sexo", 
+                      "Grupo etario", 
+                      "Casos", 
+                      "Porcentaje")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "bordered"), 
+                full_width = TRUE, 
+                position = "center") %>%
+  row_spec(0, bold = TRUE, background = "#035efc", color = "white") %>%
+  row_spec(seq(1, nrow(Estado2_sexo_gruposetarios), 2), background = "#F5F5F5") %>%  
+  collapse_rows(columns = 1, valign = "middle", latex_hline = "none") %>%  
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC")
+Desocupados_sexo_gruposetarios
 
 #CAT_OCUP, sexo y edad
 
@@ -570,28 +751,16 @@ table(EPH2019_2023CAES$Preca_forma_contrat)
 #Preca.cuentaprop 
 
 
-#pruebo la distribución de cat_ocup ,desaparecieron todas las categorías ocupacionales menos la 3. Esto es porque usé filter en la creación de las variables anteriores, y perdí las obs para otras cat ocup. ya está resuelto
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "CAT_OCUP", weight= "PONDERA", add.percentage = "col")
-
-#(TAREA: chequear si la pp05h se cruza con cat_ocup cuentapropistas--sí se cruza:
-estabilidadcuentaprop <- EPH2019_2023CAES %>%  filter(CAT_OCUP == 2 & ESTADO== 1 ) %>%  
-  group_by(ANO4, CAT_OCUP, PP05H) %>% 
-  summarize(casos = sum(PONDERA), .groups = "drop") %>%  
-  group_by(ANO4) %>%  
-  mutate(Porcentaje = round((casos / sum(casos)) * 100, 1))
-
-
 EPH2019_2023CAES <- EPH2019_2023CAES %>% 
   mutate(
-    preca_cuentapropista = ifelse(CAT_OCUP == 2, 
+    Preca_cuentaprop = ifelse(CAT_OCUP == 2, 
                               ifelse(PP05H %in% c(1,2,3,4), 10, 
                                      ifelse(PP05H == 9, 99, 0)), #99 son los cuenta propia que responden 
                               0)  # 0 para los que no son CAT_OCUP == 2
   )
 
 
-
-calculate_tabulates(EPH2019_2023CAES, "ANO4", "preca_cuentapropista", weight= "PONDERA", add.percentage = "col")
+calculate_tabulates(EPH2019_2023CAES, "ANO4", "Preca_cuentaprop", weight= "PONDERA", add.percentage = "col")
 
 ##PRECARIEDAD POR INGRESOS 
 
@@ -716,7 +885,7 @@ eph_filtrada <- eph_filtrada %>%
 eph_filtrada <- eph_filtrada %>%
   mutate(precariedad_total_cuentapropistas = as.numeric(Preca_ingresos +
                                           Preca_intensidad +
-                                          preca_cuentapropista
+                                          Preca_cuentaprop
   ))
 colnames(eph_filtrada)
 unique(eph_filtrada$precariedad_total_cuentapropistas)
@@ -749,7 +918,6 @@ Precariedad_por_ano <- eph_filtrada %>%
   summarise(Cantidad = n(), .groups = "drop") %>%
   tidyr::pivot_wider(names_from = Niveles_precariedad_total, values_from = Cantidad, values_fill = 0)
 
-
 Tabla_precariedad_por_ano <- Precariedad_por_ano %>%
   kable(booktabs = TRUE,          
         caption = "<b>Niveles de precariedad laboral según año. Total de ocupados asalariados y cuentapropistas (31 aglomerados urbanos). 3T-2019-2023</b>", 
@@ -759,7 +927,7 @@ Tabla_precariedad_por_ano <- Precariedad_por_ano %>%
                       "Precariedad media", 
                       "Precariedad alta", 
                       "NA"
-                      )) %>%   
+        )) %>%   
   kable_styling(bootstrap_options = c("striped", "hover", "bordered"), 
                 full_width = T, 
                 position = "center") %>% 
@@ -767,11 +935,10 @@ Tabla_precariedad_por_ano <- Precariedad_por_ano %>%
   row_spec(seq(1, nrow(Precariedad_por_ano), 2), background = "#F5F5F5") %>% 
   collapse_rows(columns = 1, valign = "middle") %>%  
   column_spec(1, bold = TRUE, color = "blue" 
-              ) %>% 
+  ) %>% 
   footnote(symbol = "Elaboración propia en base a EPH-INDEC")
-  
-Tabla_precariedad_por_ano
 
+Tabla_precariedad_por_ano
 
 #Tipos de precariedad por año 
 
@@ -779,79 +946,418 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-# Convertimos los datos a formato largo
-eph_long <- eph_filtrada %>%
-  select(ANO4, Preca_cond_lab, Preca_ingresos, Preca_forma_contrat, Preca_intensidad) %>%
-  pivot_longer(cols = c(Preca_cond_lab, Preca_ingresos, Preca_forma_contrat, Preca_intensidad), 
-               names_to = "Tipo_de_precariedad", 
-               values_to = "Valor")
-
-# Crear el gráfico de líneas
-graf_tipo_precariedad <- ggplot(eph_long, aes(x = factor(ANO4), y = Valor, color = Tipo_de_precariedad, group = Tipo_de_precariedad)) +
-  geom_line(linewidth = 1) +  
-  geom_point(size = 2) +  # Opcional: agrega puntos en las líneas
-  scale_color_brewer(palette = "Oranges") +  
-  labs(title = "Tipo de precariedad por año",
-       subtitle = "Total de 31 aglomerados. Terceros trimestres de 2019-2023",
-       x = "Año",
-       y = "Valor de precariedad",
-       color = "Tipo de precariedad") +
-  theme_minimal()
-
-# Mostrar el gráfico
-print(graf_tipo_precariedad)
-
-
-
-# PUNTO 3: 
-
-
-#calculo cantidad de asalariados precarios por categoria
-
-
+# ASALARIADOS
 asalariados_precarios <- eph_filtrada %>% 
   group_by(ANO4) %>% 
-  filter(ESTADO == 1, CAT_OCUP == 3) %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 3) %>% 
   summarise(
-    Preca_ingresos = sum(PONDERA[Preca_ingresos_deciles_N ==30], na.rm = TRUE) + 
-      sum(PONDERA[Preca_ingresos_buscarotrotrabajo > 0], na.rm = TRUE),
-    Preca_intensidad = sum(PONDERA[Preca_intensidad_pluriempleo > 0], na.rm = TRUE) + 
-      sum(PONDERA[Preca_intensidad_sobreocup > 0], na.rm = TRUE), 
-    Preca_cond_lab = sum(PONDERA[Preca_cond_lab > 0], na.rm = TRUE), 
-    Preca_forma_contrat = sum (PONDERA [Preca_forma_contrat> 0], na.rm = TRUE),
-    Asalariados = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 3], na.rm = TRUE)
-  )
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_ingresos = (Preca_ingresos / Asalariados)*100)
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_intensidad = (Preca_intensidad / Asalariados)*100)
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_con_lab = (Preca_cond_lab / Asalariados)*100)
-asalariados_precarios <- asalariados_precarios %>%
-  mutate(Proporcion_precariedad_contrat = (Preca_forma_contrat / Asalariados)*100)
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cond_lab = sum(PONDERA[Preca_cond_lab == 30], na.rm = TRUE), 
+    Preca_forma_contrat = sum (PONDERA [Preca_forma_contrat == 10], na.rm = TRUE),
+    Asalariados = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 3], na.rm = TRUE),
+    Proporcion_precariedad_ingresosA = (Preca_ingresos / Asalariados)*100,
+    Proporcion_precariedad_intensidadA = (Preca_intensidad / Asalariados)*100,
+    Proporcion_precariedad_cond_labA = (Preca_cond_lab / Asalariados)*100,
+    Proporcion_precariedad_contratA = (Preca_forma_contrat / Asalariados)*100)
 
-cuentapropistas_precarios <- eph_filtrada %>% 
+#gráfico 
+asalariados_precarios_select <- asalariados_precarios %>%
+  select(ANO4, Proporcion_precariedad_ingresosA, Proporcion_precariedad_intensidadA, Proporcion_precariedad_cond_labA, Proporcion_precariedad_contratA)
+
+asalariados_precarios_select <- asalariados_precarios_select %>%
+  rename_with(~ gsub("Proporcion_precariedad_", "", .), starts_with("Proporcion_precariedad"))
+
+
+asalariados_precarios_long <- asalariados_precarios_select %>%
+  pivot_longer(cols = c("ingresosA", 
+                        "intensidadA", 
+                        "cond_labA", 
+                        "contratA"),  # Especificando las columnas
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Proporcion")
+
+
+
+# Crear gráfico de líneas
+Grafico_asalariados_precarios_ano= ggplot(asalariados_precarios_long, aes(x = factor(ANO4), y = Proporcion, color = Tipo_de_precariedad, group = Tipo_de_precariedad)) +
+  geom_line(linewidth = 1) +  
+  geom_point(size = 2) +  # Agregar puntos en las líneas
+  scale_color_brewer(palette = "Dark2", 
+                     name = "Tipo de precariedad", 
+                     labels = c("Precariedad en condiciones laborales", "Precariedad en forma de contratación","Precariedad por ingresos","Precariedad por intensidad de jornada laboral")) +  # Cambiar los nombres
+  labs(title = "Asalariados/as precarios/as según tipo de precariedad",
+       subtitle = "Terceros trimestres, 2019-2023",
+       x = "Año",
+       y = "Proporción de precariedad") +
+  theme_minimal() +
+  geom_text(aes(label = paste0(round(Proporcion, 2))), # Etiqueta con el valor de la proporción redondeado
+            vjust = -0.5, hjust = 0.5, size = 2, color = "black") +  # Ajuste de posición de las etiquetas
+  theme(legend.position = "top",  # Mueve la leyenda al top
+        legend.text = element_text(size = 8),  # Ajusta el tamaño del texto de la leyenda
+        legend.title = element_text(size = 10))+
+  guides(color = guide_legend(nrow = 2))
+
+print(Grafico_asalariados_precarios_ano)
+
+# CUENTAPROPISTAS 
+
+Cuentapropistas_precarios = eph_filtrada %>% 
   group_by(ANO4) %>% 
-  filter(ESTADO == 1, CAT_OCUP == 2) %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 2) %>% 
   summarise(
-    Preca_ingresos = sum(PONDERA[Preca_ingresos_deciles_N ==30], na.rm = TRUE) + 
-      sum(PONDERA[Preca_ingresos_buscarotrotrabajo > 0], na.rm = TRUE),
-    Preca_intensidad = sum(PONDERA[Preca_intensidad_pluriempleo > 0], na.rm = TRUE) + 
-      sum(PONDERA[Preca_intensidad_sobreocup > 0], na.rm = TRUE), 
-    preca.cuentaprop = sum(PONDERA[preca.cuentaprop==10], na.rm = TRUE),
-   Cuentapropistas = sum(PONDERA[ESTADO == 1 & CAT_OCUP == 2], na.rm = TRUE)
+    Cuentapropistas = sum(PONDERA [ESTADO == 1 & CAT_OCUP == 2], na.rm = TRUE), 
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cuentaprop = sum (PONDERA [Preca_cuentaprop ==10], na.rm = TRUE),
+    Proporcion_precariedad_ingresosC = (Preca_ingresos / Cuentapropistas)*100, 
+    Proporcion_precariedad_intensidadC = (Preca_intensidad / Cuentapropistas)*100,
+    Proporcion_precariedad_cuentapropC = (Preca_cuentaprop / Cuentapropistas)*100)
+
+#grafico
+
+cuentapropistas_precarios_select <- Cuentapropistas_precarios %>%
+  select(ANO4, Proporcion_precariedad_ingresosC, Proporcion_precariedad_intensidadC, Proporcion_precariedad_cuentapropC) %>% 
+  rename_with(~ gsub("Proporcion_precariedad_", "", .), starts_with("Proporcion_precariedad"))
+
+cuentapropistas_precarios_long <- cuentapropistas_precarios_select %>%
+  pivot_longer(cols = c("ingresosC", 
+                        "intensidadC", 
+                        "cuentapropC"),  # Especificando las columnas
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Proporcion")
+
+
+Grafico_cuentaprop_precarios_ano= ggplot(cuentapropistas_precarios_long, aes(x = factor(ANO4), y = Proporcion, color = Tipo_de_precariedad, group = Tipo_de_precariedad)) +
+  geom_line(linewidth = 1) +  
+  geom_point(size = 2) +  # Agregar puntos en las líneas
+  scale_color_brewer(palette = "Dark2", 
+                     name = "Tipo de precariedad", 
+                     labels = c("Precariedad por inestabilidad laboral","Precariedad por ingresos", "Precariedad por intensidad de jornada laboral")) +  # Cambiar los nombres
+  labs(title = "Cuentapropistas precarios/as según tipo de precariedad",
+       subtitle = "Terceros trimestres, 2019-2023",
+       x = "Año",
+       y = "Proporción de precariedad") +
+  theme_minimal() +
+  geom_text(aes(label = round(Proporcion, 2)), # Etiqueta con el valor de la proporción redondeado
+            vjust = -0.5, hjust = 0.5, size = 2, color = "black") +  # Ajuste de posición de las etiquetas
+  theme(legend.position = "top",  # Mueve la leyenda al top
+        legend.text = element_text(size = 8),  # Ajusta el tamaño del texto de la leyenda
+        legend.title = element_text(size = 10)) +
+  guides(color = guide_legend(nrow = 2))  # Organiza la leyenda en 2 filas
+
+print(Grafico_cuentaprop_precarios_ano)
+
+# precariedad por sexo
+
+Precariedad_sexo_GE <- eph_filtrada %>% 
+  filter(!is.na(Niveles_precariedad_total) & !is.na(grupos_etarios)) %>% 
+  group_by(SEXO, grupos_etarios, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = (casos / sum(casos)))
+
+graf_Precariedad_sexo_GE=ggplot (Precariedad_sexo_GE, aes(x = interaction(SEXO, grupos_etarios), y = Porcentaje, fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity") +  # Graficar como barras apiladas
+  labs(
+    title = "Niveles de Precariedad según Sexo y Grupo Etario",
+    subtitle = "Proporción de precariedad según sexo y grupo etario (2019-2023)",
+    x = "Sexo y Grupo Etario",
+    y = "Porcentaje",
+    fill = "Niveles de Precariedad"
+  ) +
+  scale_fill_brewer(palette = "Greens") +  # Colores para los niveles de precariedad
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas del eje x para mayor legibilidad
+  )+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+
+
+print(graf_Precariedad_sexo_GE)
+
+# precaredad x lugar de nacimiento 
+
+Precariedad_lugar_nacimiento <- eph_filtrada %>% 
+  filter(!is.na(Niveles_precariedad_total) & !is.na(lugar_nacimiento))  %>% 
+  group_by(lugar_nacimiento, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = (casos / sum(casos)))
+
+graf_precariedad_lugarnacimiento = ggplot(Precariedad_lugar_nacimiento, aes(x = lugar_nacimiento, y = Porcentaje, fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity") +  # Graficar como barras apiladas
+  labs(
+    title = "Niveles de Precariedad según lugar de nacimiento",
+    subtitle = "Terceros trimestres, 2019-2023",
+    x = "Lugar de nacimiento",
+    y = "Porcentaje",
+    fill = "Niveles de Precariedad"
+  ) +
+  scale_fill_brewer(palette = "PuBuGn") +  # Colores para los niveles de precariedad
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas del eje x para mayor legibilidad
+  )+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+
+print(graf_precariedad_lugarnacimiento)
+
+# precariedad x nivel educativo 
+
+Precariedad_nivel_educativo <- eph_filtrada %>% 
+  filter(!is.na(Niveles_precariedad_total) & !is.na(nivel_educativo_completo))  %>% 
+  group_by(nivel_educativo_completo, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  mutate(Porcentaje = (casos / sum(casos)))
+
+graf_precariedad_nivel_educativo = ggplot(Precariedad_nivel_educativo, aes(x = nivel_educativo_completo, y = Porcentaje, fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity") +  # Graficar como barras apiladas
+  labs(
+    title = "Niveles de Precariedad según nivel educativo",
+    subtitle = "Terceros trimestres, 2019-2023",
+    x = "Nivel educativo",
+    y = "Porcentaje",
+    fill = "Niveles de Precariedad"
+  ) +
+  scale_fill_brewer(palette = "RdPu") +  # Colores para los niveles de precariedad
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotar etiquetas del eje x para mayor legibilidad
+  )+
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5),  
+            color = "#313332", fontface = "bold", size = 2.5)
+
+print(graf_precariedad_nivel_educativo) 
+
+# precariedad por tipo de establecimiento
+
+Precariedad_establecimiento <- eph_filtrada %>%
+  filter(!is.na(Niveles_precariedad_total) & !is.na(ambito_establecimiento)) %>% 
+  group_by(ambito_establecimiento, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  group_by(ambito_establecimiento) %>% 
+  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
+  ungroup()
+
+
+Tabla_precariedad_por_ambitoestablecimiento <- Precariedad_establecimiento %>%
+  kable(booktabs = F,          
+        caption = "<b>Niveles de precariedad laboral según ámbito de establecimiento. Total de ocupados asalariados y cuentapropistas (31 aglomerados urbanos). 3T-2019-2023</b>", 
+        align = c('l','c','c','c'), 
+        col.names = c("Ambito", 
+                      "Tipo de precariedad", 
+                      "Casos", 
+                      "Proporción" 
+                      
+        )) %>%   
+  kable_styling(bootstrap_options = c("striped", "hover", "bordered"), 
+                full_width = T, 
+                position = "center") %>% 
+  row_spec(0, bold = TRUE, background = "#e3e5e8", color = "blue") %>%
+  row_spec(seq(1, nrow(Precariedad_establecimiento), 2), background = "#F5F5F5") %>% 
+  collapse_rows(columns = 1, valign = "middle") %>% 
+  footnote(symbol = "Elaboración propia en base a EPH-INDEC")
+
+Tabla_precariedad_por_ambitoestablecimiento
+
+# tipos de precariedad según tipo de establecimiento
+
+#asalariados 
+
+Tipo_precariedad_establecimiento <- eph_filtrada %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 3 & !is.na(ambito_establecimiento)) %>% 
+  group_by(ambito_establecimiento) %>%  # Agrupar por ámbito de establecimiento
+  summarise(
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cond_lab = sum(PONDERA[Preca_cond_lab == 30], na.rm = TRUE), 
+    
+    Preca_forma_contrat = sum(PONDERA[Preca_forma_contrat == 10], na.rm = TRUE),
+    
+    Asalariados = sum(PONDERA, na.rm = TRUE),  # Total de asalariados
+    
+    Proporcion_precariedad_ingresosA = (Preca_ingresos / Asalariados),
+    Proporcion_precariedad_intensidadA = (Preca_intensidad / Asalariados),
+    Proporcion_precariedad_cond_labA = (Preca_cond_lab / Asalariados),
+    Proporcion_precariedad_contratA = (Preca_forma_contrat / Asalariados)
   )
 
-cuentapropistas_precarios <- cuentapropistas_precarios %>%
-  mutate(Proporcion_precariedad_ingresos = (Preca_ingresos / Cuentapropistas)*100)
-cuentapropistas_precarios <- cuentapropistas_precarios %>%
-  mutate(Proporcion_precariedad_intensidad = (Preca_intensidad / Cuentapropistas)*100)
-cuentapropistas_precarios <- cuentapropistas_precarios %>%
-  mutate(Proporcion_precariedad_cuentapropista = (preca.cuentaprop / Cuentapropistas)*100)
+# Transformar el dataframe a formato largo
+Tipo_precariedad_establecimiento_long <- Tipo_precariedad_establecimiento %>%
+  pivot_longer(cols = starts_with("Proporcion_precariedad"), 
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Porcentaje")
+
+# Crear el gráfico de barras
+ggplot(Tipo_precariedad_establecimiento_long, aes(x = ambito_establecimiento, 
+                                                  y = Porcentaje, 
+                                                  fill = Tipo_de_precariedad)) +
+  geom_bar(stat = "identity", position = "dodge") +  # Barra lado a lado (no apilada)
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en formato porcentaje
+  labs(
+    title = "Tipo de Precariedad por Ámbito de Establecimiento",
+    subtitle = "Total asalariados. Terceros trimestres 2019-2023",
+    x = "Ámbito de Establecimiento",
+    y = "Porcentaje",
+    fill = "Tipo de Precariedad"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(
+    values = c("Proporcion_precariedad_cond_labA" = "#66c2a5", 
+               "Proporcion_precariedad_contratA" = "#fc8d62", 
+               "Proporcion_precariedad_ingresosA" = "#8da0cb", 
+               "Proporcion_precariedad_intensidadA" = "#e78ac3"),
+    labels = c("Proporcion_precariedad_cond_labA" = "Precariedad en condiciones laborales", 
+               "Proporcion_precariedad_contratA" = "Precariedad en forma de contratación",
+               "Proporcion_precariedad_ingresosA" = "Precariedad por ingresos", 
+               "Proporcion_precariedad_intensidadA" = "Precariedad por intensidad de jornada laboral")
+  )+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotar etiquetas del eje X
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)), 
+            position = position_dodge(width = 0.8), 
+            color = "black", fontface = "bold", size = 3)
+
+# cuentapropistas 
+
+Tipo_precariedad_establecimiento_cuentaprop <- eph_filtrada %>% 
+  filter(ESTADO == 1 & CAT_OCUP == 2 & ambito_establecimiento == "Privado") %>% 
+  group_by(ambito_establecimiento) %>%  # Agrupar por ámbito de establecimiento
+  summarise(
+    Cuentapropistas = sum(PONDERA [ESTADO == 1 & CAT_OCUP == 2], na.rm = TRUE),
+    Preca_ingresos = sum(PONDERA[Preca_ingresos %in% c(30, 40)], na.rm = TRUE),
+    
+    Preca_intensidad = sum(PONDERA[Preca_intensidad %in% c(10, 20)], na.rm = TRUE),
+    
+    Preca_cuentaprop = sum (PONDERA [Preca_cuentaprop ==10], na.rm = TRUE),
+    Proporcion_precariedad_ingresosC = (Preca_ingresos / Cuentapropistas), 
+    Proporcion_precariedad_intensidadC = (Preca_intensidad / Cuentapropistas),
+    Proporcion_precariedad_cuentapropC = (Preca_cuentaprop / Cuentapropistas))
+
+
+# Transformar el dataframe a formato largo
+Tipo_precariedad_establecimiento_cuentaprop_long <- Tipo_precariedad_establecimiento_cuentaprop %>%
+  pivot_longer(cols = starts_with("Proporcion_precariedad"), 
+               names_to = "Tipo_de_precariedad", 
+               values_to = "Porcentaje")
+
+# Crear el gráfico de barras
+ggplot(Tipo_precariedad_establecimiento_cuentaprop_long, aes(x = ambito_establecimiento, 
+                                                             y = Porcentaje, 
+                                                             fill = Tipo_de_precariedad)) +
+  geom_bar(stat = "identity", position = "dodge") +  # Barra lado a lado (no apilada)
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en formato porcentaje
+  labs(
+    title = "Tipo de Precariedad por Ámbito de Establecimiento",
+    subtitle = "Total cuentapropistas. Terceros trimestres 2019-2023",
+    x = "Ámbito de Establecimiento",
+    y = "Porcentaje",
+    fill = "Tipo de Precariedad"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(
+    values = c("Proporcion_precariedad_cuentapropC" = "#fc8d62", 
+               "Proporcion_precariedad_ingresosC" = "#8da0cb", 
+               "Proporcion_precariedad_intensidadC" = "#e78ac3"),
+    labels = c("Proporcion_precariedad_cuentapropC" = "Precariedad por inestabilidad laboral", 
+               "Proporcion_precariedad_ingresosA" = "Precariedad por ingresos", 
+               "Proporcion_precariedad_intensidadA" = "Precariedad por intensidad de jornada laboral")
+  )+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotar etiquetas del eje X
+  geom_text(aes(label = scales::percent(Porcentaje, accuracy = 0.1)), 
+            position = position_dodge(width = 0.8), 
+            color = "black", fontface = "bold", size = 3)
+
+# precariedad por sector de actividad
+
+names(eph_filtrada)
+Precariedad_sectoractividad <- eph_filtrada %>%
+  filter(ESTADO == 1 & CAT_OCUP %in% c(2,3) & !is.na(Niveles_precariedad_total) & !is.na(caes_eph_label)) %>% 
+  group_by(caes_eph_label, Niveles_precariedad_total) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  group_by(caes_eph_label) %>% 
+  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
+  ungroup()
 
 
 
+# Gráfico de barras apiladas horizontales (ajustado)
+Grafico_Precariedad_sectoractividad=ggplot(Precariedad_sectoractividad, aes(x = casos, 
+                                        y = reorder(caes_eph_label, casos), 
+                                        fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity", position = "fill") +  # Apilado proporcional
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en porcentaje
+  labs(
+    title = "Distribución de Precariedad por Sector de Actividad",
+    subtitle = "Total de ocupados asalariados y cuentapropistas (2019-2023)",
+    x = "Porcentaje",
+    y = "Sector de Actividad",
+    fill = "Nivel de Precariedad"
+  ) +
+  theme_minimal(base_size = 12) +  # Fuente más grande
+  theme(
+    legend.position = "bottom",  # Leyenda debajo
+    legend.title = element_text(face = "bold"),  # Título en negrita
+    legend.key.size = unit(1, "cm"),  # Tamaño de la leyenda
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),  # Centrar título
+    plot.subtitle = element_text(size = 10, hjust = 0.5),  # Centrar subtítulo
+    axis.text.y = element_text(size = 10)  # Tamaño de texto del eje Y
+  ) +
+  scale_fill_brewer(palette = "Set2") +  # Colores diferenciados
+  geom_text(aes(label = paste0(round(Porcentaje, 1), "%")), 
+            position = position_fill(vjust = 0.5), 
+            color = "black", size = 4)  # Etiquetas dentro de las barras
+print(Grafico_Precariedad_sectoractividad)
+ggsave("Precariedad_por_Sector.png", plot = Grafico_Precariedad_sectoractividad, width = 12, height = 8, dpi = 300, bg = "white")
 
- 
-  
-  
+eph_filtrada=eph_filtrada %>% 
+  mutate(algo_precariedad= case_when(precariedad_total_asalariados==0 ~ "No", 
+                                     precariedad_total_asalariados>0 ~ "Si", 
+                                     precariedad_total_cuentapropistas== 0 ~ "No", 
+                                     precariedad_total_cuentapropistas>0~ "Si"))
+
+Algoprecarios_sector <- eph_filtrada %>%
+  filter(ESTADO == 1 & CAT_OCUP %in% c(2,3) & !is.na(algo_precariedad) & !is.na(caes_eph_label)) %>% 
+  group_by(caes_eph_label, algo_precariedad) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  group_by(caes_eph_label) %>% 
+  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
+  ungroup()
+
+Grafico_algoprecariedadsectoractividad=ggplot(Algoprecarios_sector, aes(x = casos, 
+                                                                        y = reorder(caes_eph_label, casos), 
+                                                                        fill = algo_precariedad)) +
+  geom_bar(stat = "identity", position = "fill") +  # Apilado proporcional
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en porcentaje
+  labs(
+    title = "Distribución de ocupados/as precarios por Sector de Actividad",
+    subtitle = "Total de ocupados asalariados y cuentapropistas (2019-2023)",
+    x = "Porcentaje",
+    y = "Sector de Actividad",
+    fill = "Algo de precariedad"
+  ) +
+  theme_minimal(base_size = 12) +  # Fuente más grande
+  theme(
+    legend.position = "bottom",  # Leyenda debajo
+    legend.title = element_text(face = "bold"),  # Título en negrita
+    legend.key.size = unit(1, "cm"),  # Tamaño de la leyenda
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),  # Centrar título
+    plot.subtitle = element_text(size = 10, hjust = 0.5),  # Centrar subtítulo
+    axis.text.y = element_text(size = 10)  # Tamaño de texto del eje Y
+  ) +
+  scale_fill_brewer(palette = "Set2") +  # Colores diferenciados
+  geom_text(aes(label = paste0(round(Porcentaje, 1), "%")), 
+            position = position_fill(vjust = 0.5), 
+            color = "black", size = 4)  # Etiquetas dentro de las barras
+print(Grafico_algoprecariedadsectoractividad)
+ggsave("Algo_de_Precariedad_por_Sector.png", plot = Grafico_algoprecariedadsectoractividad, width = 12, height = 8, dpi = 300, bg = "white")
+

@@ -229,8 +229,6 @@ Tras una contracción en el tercer trimestre de 2020 y 2021, la cantidad de asal
 
 ```{r echo=FALSE}
 
-table(EPH2019_2023CAES$CAT_OCUP)
-
 categ_ocupacional_pond = EPH2019_2023CAES %>% 
   filter(ESTADO == 1) %>% 
   group_by(ANO4, CAT_OCUP) %>% 
@@ -299,10 +297,9 @@ print(graf_ambitoestablecimiento)
 
 ```
 
-## Tasas básicas del Mercado de trabajo en el período 2019-2023 (VER)
+## Tasas básicas del Mercado de trabajo en el período 2019-2023 
 
-*Con respecto a las variables vinculadas a la dinámica del mercado de trabajo, vemos que la tasa de empleo sufre una caída significativa en el primer año de pandemia (2020) de cinco puntos porcentuales(de 42,6, a 37,4 %), para luego recuperar alrededor de 8 puntos y alcanzar al 45,5% de la población para el tercer trimestre de 2023. El correlato de este comportamiento puede observarse tanto en el crecimiento de la desocupación (de un 9,7 a un 11,7%) como de la inactividad en ese mismo año (del 52,5% al 57,4%), situación que se revierte progresivamente hacia 2023. Así, la desocupación para el total urbano llega a un piso de 5,7% y la inactividad desciende hasta el 51,5%.\
-De este modo, el crecimiento de la tasa de empleo desempeña un papel significativo en el incremento de la tasa de actividad que puede observarse tras la abrupta caída de 2020.*
+*(Los valores nos habían dado diferentes, más consistentes con los que publica el INDEC, no supimos por qué se nos cambiaron)*
 
 ```{r}
 Datos_MT_1923 <- EPH2019_2023CAES %>%  
@@ -889,9 +886,9 @@ print(Grafico_cuentaprop_precarios_ano)
 
 #### Niveles de precariedad por sexo y grupo etario
 
-Al segmentar el análisis por sexo y grupo etario encontramos que, en todos los grupos etarios, la proporción de mujeres con niveles de precariedad alta o media es mayor que en el caso de los varones. 
+Al segmentar el análisis por sexo y grupo etario encontramos que, en todos los grupos etarios, la proporción de mujeres con niveles de precariedad alta o media es mayor que en el caso de los varones.
 
-A su vez, los niveles de precariedad media y alta aparecen con mayor frecuencia en los segmentos etarios más jóvenes. De las mujeres que presentan algún rasgo de precariedad, el 64% presenta niveles medios o altos, en el caso de los varones el porcentaje es del 59,3%. 
+A su vez, los niveles de precariedad media y alta aparecen con mayor frecuencia en los segmentos etarios más jóvenes. De las mujeres que presentan algún rasgo de precariedad, el 64% presenta niveles medios o altos, en el caso de los varones el porcentaje es del 59,3%.
 
 ```{r echo=FALSE}
 Precariedad_sexo_GE <- eph_filtrada %>% 
@@ -923,10 +920,9 @@ print(graf_Precariedad_sexo_GE)
 
 ```
 
-
 #### Niveles de precariedad según lugar de nacimiento
 
-Analizando los niveles de precariedad según lugar de nacimiento encontramos que la distribución es similar en general, pero los niveles medio y alto tienen mayor relevancia en el caso de los migrantes de países limítrofes; seis de cada 10 ocupados/as se ubican en alguna de estas categorías. 
+Analizando los niveles de precariedad según lugar de nacimiento encontramos que la distribución es similar en general, pero los niveles medio y alto tienen mayor relevancia en el caso de los migrantes de países limítrofes; seis de cada 10 ocupados/as se ubican en alguna de estas categorías.
 
 ```{r echo=FALSE}
 
@@ -960,7 +956,7 @@ print(graf_precariedad_lugarnacimiento)
 
 #### Niveles de precariedad según nivel educativo
 
-El entrecruzamiento entre nivel educativo y niveles de precariedad arroja como resultado una relación inversamente proporcional entre ambas variables. Así, siete de cada diez personas que no han completado el nivel primario tienen niveles medios o altos de precariedad; a la vez que dos personas cada diez que completaron el nivel universitario se concentran en esas  categorías.  
+El entrecruzamiento entre nivel educativo y niveles de precariedad arroja como resultado una relación inversamente proporcional entre ambas variables. Así, siete de cada diez personas que no han completado el nivel primario tienen niveles medios o altos de precariedad; a la vez que dos personas cada diez que completaron el nivel universitario se concentran en esas categorías.
 
 ```{r}
 
@@ -993,7 +989,7 @@ print(graf_precariedad_nivel_educativo)
 
 #### Niveles de precariedad según ámbito de establecimiento
 
-Si observamos niveles de precariedad según el ámbito del establecimiento, encontramos que para cada uno de esos niveles los valores son más importantes en el ámbito privado que en el ámbito público. 
+Si observamos niveles de precariedad según el ámbito del establecimiento, encontramos que para cada uno de esos niveles los valores son más importantes en el ámbito privado que en el ámbito público.
 
 ```{r echo=FALSE}
 Precariedad_establecimiento <- eph_filtrada %>%
@@ -1026,9 +1022,9 @@ Tabla_precariedad_por_ambitoestablecimiento <- Precariedad_establecimiento %>%
 Tabla_precariedad_por_ambitoestablecimiento
 ```
 
-Amerita, sin embargo, revisar qué ocurre con cada uno de los tipos de precariedad que identificamos. 
+Amerita, sin embargo, revisar qué ocurre con cada uno de los tipos de precariedad que identificamos.
 
-Mientras que hay valores en los que los asalariados/as del ámbito público y privado se encuentran lejos (precarización en las condiciones de trabajo) hay otros en los que están más cerca (precarización por la intensidad de la jornada laboral, precarización en las formas de contratación). 
+Mientras que hay valores en los que asalariados/as del ámbito público y privado se encuentran lejos (precarización en las condiciones de trabajo) hay otros en los que están más cerca (precarización por la intensidad de la jornada laboral, precarización en las formas de contratación).
 
 ```{r}
 Tipo_precariedad_establecimiento <- eph_filtrada %>% 
@@ -1088,8 +1084,7 @@ ggplot(Tipo_precariedad_establecimiento_long, aes(x = ambito_establecimiento,
 
 ```
 
-Si indagamos en los trabajadores/as por cuenta propia, quienes se desempeñan en el sector privado, encontramos una mayor incidencia de la precariedad por ingresos en comparación con los asalariados.En los demás tipos de precariedad, también existen diferencias entre ambos grupos de trabajadores/as. 
-
+Si indagamos en los trabajadores/as por cuenta propia, quienes se desempeñan en el sector privado, encontramos una mayor incidencia de la precariedad por ingresos en comparación con los asalariados. En los demás tipos de precariedad, también existen diferencias entre ambos grupos de trabajadores/as.
 
 ```{r}
 
@@ -1143,3 +1138,91 @@ ggplot(Tipo_precariedad_establecimiento_cuentaprop_long, aes(x = ambito_establec
 
 ```
 
+#### Niveles de precariedad según sector de actividad
+
+La apertura por sectores de actividad nos permite distinguir un grupo en el que los niveles altos de precariedad superan el 20% del total de ocupados/as: Construcción, Servicio doméstico y Hoteles y restaurantes. Le sigue de cerca el sector Comercio. Los valores más bajos aparecen en la Administración pública y en Enseñanza (donde existe mayor prevalencia del sector público que del privado).
+
+En relación con los niveles medios de precariedad, casi la mitad de los/as ocupados precarios/as de los sectores de Comercio, Construcción, Servicio Doméstico, Hoteles y restaurantes y Otros servicios sociales y comunitarios se encuentran en este grupo.
+
+```{r eval=FALSE, include=FALSE}
+Grafico_Precariedad_sectoractividad=ggplot(Precariedad_sectoractividad, aes(x = casos, 
+                                        y = reorder(caes_eph_label, casos), 
+                                        fill = Niveles_precariedad_total)) +
+  geom_bar(stat = "identity", position = "fill") +  # Apilado proporcional
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en porcentaje
+  labs(
+    title = "Distribución de Precariedad por Sector de Actividad",
+    subtitle = "Total de ocupados asalariados y cuentapropistas (2019-2023)",
+    x = "Porcentaje",
+    y = "Sector de Actividad",
+    fill = "Nivel de Precariedad"
+  ) +
+  theme_minimal(base_size = 12) +  # Fuente más grande
+  theme(
+    legend.position = "bottom",  # Leyenda debajo
+    legend.title = element_text(face = "bold"),  # Título en negrita
+    legend.key.size = unit(1, "cm"),  # Tamaño de la leyenda
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),  # Centrar título
+    plot.subtitle = element_text(size = 10, hjust = 0.5),  # Centrar subtítulo
+    axis.text.y = element_text(size = 10)  # Tamaño de texto del eje Y
+  ) +
+  scale_fill_brewer(palette = "Set2") +  # Colores diferenciados
+  geom_text(aes(label = paste0(round(Porcentaje, 1), "%")), 
+            position = position_fill(vjust = 0.5), 
+            color = "black", size = 4)  # Etiquetas dentro de las barras
+print(Grafico_Precariedad_sectoractividad)
+ggsave("Precariedad_por_Sector.png", plot = Grafico_Precariedad_sectoractividad, width = 12, height = 8, dpi = 300, bg = "white")
+
+```
+
+![](Precariedad_por_Sector.png)
+
+Un último ejercicio en relación con los sectores consistió en evaluar cuáles tenían ocupados/as con valor "0" en precariedad_total. Esto arrojó los siguientes resultados:
+
+```{r eval=FALSE, include=FALSE}
+
+eph_filtrada=eph_filtrada %>% 
+  mutate(algo_precariedad= case_when(precariedad_total_asalariados==0 ~ "No", 
+                                     precariedad_total_asalariados>0 ~ "Si", 
+                                     precariedad_total_cuentapropistas== 0 ~ "No", 
+                                     precariedad_total_cuentapropistas>0~ "Si"))
+
+Algoprecarios_sector <- eph_filtrada %>%
+  filter(ESTADO == 1 & CAT_OCUP %in% c(2,3) & !is.na(algo_precariedad) & !is.na(caes_eph_label)) %>% 
+  group_by(caes_eph_label, algo_precariedad) %>% 
+  summarize(casos = sum(PONDERA)) %>% 
+  group_by(caes_eph_label) %>% 
+  mutate(Porcentaje = (casos / sum(casos)) * 100) %>% 
+  ungroup()
+
+Grafico_algoprecariedadsectoractividad=ggplot(Algoprecarios_sector, aes(x = casos, 
+                                                                        y = reorder(caes_eph_label, casos), 
+                                                                        fill = algo_precariedad)) +
+  geom_bar(stat = "identity", position = "fill") +  # Apilado proporcional
+  scale_x_continuous(labels = scales::percent_format(scale = 1)) +  # Mostrar en porcentaje
+  labs(
+    title = "Distribución de ocupados/as precarios por Sector de Actividad",
+    subtitle = "Total de ocupados asalariados y cuentapropistas (2019-2023)",
+    x = "Porcentaje",
+    y = "Sector de Actividad",
+    fill = "Algo de precariedad"
+  ) +
+  theme_minimal(base_size = 12) +  # Fuente más grande
+  theme(
+    legend.position = "bottom",  # Leyenda debajo
+    legend.title = element_text(face = "bold"),  # Título en negrita
+    legend.key.size = unit(1, "cm"),  # Tamaño de la leyenda
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),  # Centrar título
+    plot.subtitle = element_text(size = 10, hjust = 0.5),  # Centrar subtítulo
+    axis.text.y = element_text(size = 10)  # Tamaño de texto del eje Y
+  ) +
+  scale_fill_brewer(palette = "Set2") +  # Colores diferenciados
+  geom_text(aes(label = paste0(round(Porcentaje, 1), "%")), 
+            position = position_fill(vjust = 0.5), 
+            color = "black", size = 4)  # Etiquetas dentro de las barras
+print(Grafico_algoprecariedadsectoractividad)
+ggsave("Algo_de_Precariedad_por_Sector.png", plot = Grafico_algoprecariedadsectoractividad, width = 12, height = 8, dpi = 300, bg = "white")
+
+```
+
+![](Algo_de_Precariedad_por_Sector.png)
